@@ -301,8 +301,21 @@ jobs:
       - name: Trivy scan (image, gate)
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          trivy image --severity HIGH,CRITICAL --exit-code 1 --format sarif -o /tmp/trivy-image.sarif ${{ steps.scanref.outputs.ref }}
-          trivy image --severity HIGH,CRITICAL --exit-code 0 --format table ${{ steps.scanref.outputs.ref }} | tail -n 30
+          # Trivy 默认启用 secret 扫描；下列两个上游自带文件会被判为 private-key（HIGH），
+          # 二者均非 AGW 凭据，理由与复核见 evidence/06-security/SECURITY.md：
+          #   apisix/conf/cert/ssl_PLACE_HOLDER.key  上游 APISIX 占位私钥（ops.lua 默认 TLS 监听引用）
+          #   lua-resty-rsa-*.pod                    lua-resty-rsa rock 文档示例密钥
+          # 仅放行这两条路径；其余路径仍启用 secret 扫描，新增命中照常红灯。
+          SKIP_FILES=(
+            --skip-files "/usr/local/apisix/conf/cert/ssl_PLACE_HOLDER.key"
+            --skip-files "**/apisix/conf/cert/ssl_PLACE_HOLDER.key"
+            --skip-files "/usr/local/openresty/pod/lua-resty-rsa-*.pod"
+            --skip-files "**/lua-resty-rsa-*.pod"
+          )
+          trivy image --severity HIGH,CRITICAL --exit-code 1 --format sarif \
+            -o /tmp/trivy-image.sarif "${SKIP_FILES[@]}" ${{ steps.scanref.outputs.ref }}
+          trivy image --severity HIGH,CRITICAL --exit-code 0 --format table \
+            "${SKIP_FILES[@]}" ${{ steps.scanref.outputs.ref }} | tail -n 30
 
       - name: Upload Trivy SARIF
         if: always()

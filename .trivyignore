@@ -3,8 +3,9 @@
 #   首批 2026-09-14（19 CVE）；第二批 2026-09-20（+7 CVE）。
 # 依据：Dockerfile 构建阶段执行 dnf -y update，装机版本即 Anolis 8.10 仓库最新；
 # Grype 匹配数据源为 redhat:distro:redhat:8，修复版本指向 RHEL el8_10 勘误，
-# Anolis 8 尚未合入。Trivy v0.74.0 当前对这 26 个 CVE（首批 19 + 第二批 7）均未报出，条目用于保持
-# 两个扫描器的例外登记一致，避免同一风险在两个门禁中出现口径差异。
+# Anolis 8 尚未合入。注意：Trivy 在 Anolis 8.10 上 Detected OS family="none"（Unsupported os），
+# 不解析 RPM 数据库；它「未报出」这些 CVE 不构成交叉验证。本清单用于两扫描器口径一致与
+# 前向兼容（Trivy 日后支持 Anolis 时同一风险不会突然拦截）。
 # 复核到期：2026-10-14，到期后删除全部条目并重扫。
 CVE-2025-6176
 CVE-2025-68973
