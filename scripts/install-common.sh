@@ -91,8 +91,14 @@ install_apisix() {
     luarocks config variables.OPENSSL_LIBDIR "$OPENSSL_PREFIX/lib64"
     luarocks config variables.OPENSSL_INCDIR "$OPENSSL_PREFIX/include"
 
-    # build the lib and specify the storage path of the package installed
-    # To be removed after https://github.com/luarocks/luarocks/issues/1797 is fixed
+    # Tongsuo 8.5.0-pre2（OpenSSL 3.5 内核）不再提供 RIPEMD160，而 lua-resty-saml
+    # 0.2.5 自带的 xmlsec1-1.2.28 默认启用该变换，链接 xmlsec1/saml.so 时报
+    # "undefined reference to `EVP_ripemd160'"。xmlsec1 里每处引用都在
+    # #ifndef XMLSEC_NO_RIPEMD160 内（等价于它的 configure --disable-ripemd160），
+    # 但该 rock 的 Makefile 把 configure 参数写死了，只能从 CPPFLAGS 注入宏。
+    # 影响面：SAML 断言里使用 RIPEMD160 的 XML 签名/摘要不可用，其余能力不变
+    # （决策与回退条件见 docs/adr/0004-xmlsec1-no-ripemd160.md）。
+    CPPFLAGS="${CPPFLAGS:-} -DXMLSEC_NO_RIPEMD160=1" \
     luarocks make ./apisix-master-${iteration}.rockspec --tree=/tmp/build/output/apisix/usr/local/apisix/deps --local
     chown -R "$(whoami)":"$(whoami)" /tmp/build/output
     cd ..

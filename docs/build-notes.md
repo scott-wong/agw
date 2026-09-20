@@ -41,6 +41,13 @@ nginx 自己的参数重新 Configure（会丢掉 `enable-ntls`）并把 SSL 静
 `apisix-nginx-module` 的 `nginx-enable_ntls.patch` 受 `TONGSUO_VERSION_NUMBER` 保护
 （该宏只由 Tongsuo 头文件提供），因此上面两条断言同时也是国密补丁生效的判据。
 
+同一套基线还影响 APISIX 侧的原生依赖：`saml-auth` 插件依赖的 `lua-resty-saml 0.2.5`
+自带 `xmlsec1-1.2.28`，其默认启用的 RIPEMD160 变换引用 `EVP_ripemd160`，而 Tongsuo
+已不再导出该符号。`scripts/install-common.sh` 在 `luarocks make` 前注入
+`CPPFLAGS=-DXMLSEC_NO_RIPEMD160=1`（等价 xmlsec1 的 `--disable-ripemd160`，其 rock 的
+Makefile 不允许追加 configure 参数），只让这一个遗留摘要算法缺席，`saml-auth` 其余
+能力保留；决策与回退条件见 `docs/adr/0004-xmlsec1-no-ripemd160.md`。
+
 ## 与上游构建工具的差异
 
 - 中间镜像命名空间 `agw-build/*`；交付镜像本地 tag `agw:<版本>`
@@ -51,6 +58,8 @@ nginx 自己的参数重新 Configure（会丢掉 `enable-ntls`）并把 SSL 静
 - vendor patch 模块位于 `vendor-patches/0001-…`、`0002-…`（来源 PR 与回退条件见头注）
 - `Server: agw` 改写与断言见 `scripts/install-common.sh` + `scripts/smoke-docker.sh`
 - `gm` 插件插入 APISIX 默认插件表同样在 `scripts/install-common.sh`（断言 `"gm",`）
+- `saml-auth` 依赖的原生 xmlsec1 关闭 RIPEMD160 变换（Tongsuo 无 `EVP_ripemd160`），
+  以 `CPPFLAGS` 注入 `XMLSEC_NO_RIPEMD160`，见 `docs/adr/0004-xmlsec1-no-ripemd160.md`
 
 ## provenance
 
