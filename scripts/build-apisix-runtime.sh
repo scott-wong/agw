@@ -256,7 +256,8 @@ limit_ver=1.2.0
 # match the bundle directory by prefix; OpenResty master dropped the bundle
 # entirely, in which case API7's fork is installed into lualib after `make
 # install` instead.
-limit_bundle_dir=$(find bundle -maxdepth 1 -type d -name 'lua-resty-limit-traffic-*' | head -n 1)
+# -print -quit 取代 `| head -n 1`：head 提前退出会让 find 拿到 SIGPIPE（pipefail 下 141）。
+limit_bundle_dir=$(find bundle -maxdepth 1 -type d -name 'lua-resty-limit-traffic-*' -print -quit)
 if [ -n "$limit_bundle_dir" ]; then
     or_limit_ver=${limit_bundle_dir##*/}
     rm -rf "$limit_bundle_dir"
@@ -270,7 +271,7 @@ fi
 
 # ngx_http_ffi_client compiles against lua-nginx-module's public API, which it
 # reaches through the bundled copy rather than a separate checkout.
-ngx_lua_bundle_dir=$(find bundle -maxdepth 1 -type d -name 'ngx_lua-*' | head -n 1)
+ngx_lua_bundle_dir=$(find bundle -maxdepth 1 -type d -name 'ngx_lua-*' -print -quit)
 export NGX_HTTP_LUA_MODULE_DIR="$PWD/$ngx_lua_bundle_dir"
 
 ./configure --prefix="$OR_PREFIX" \

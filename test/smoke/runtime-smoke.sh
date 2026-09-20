@@ -16,7 +16,9 @@ APISIX_DEFAULT_CONF=/usr/local/apisix/apisix/cli/config.lua
 
 echo "[runtime] OpenResty / APISIX CLI"
 test -x /usr/local/openresty/bin/openresty
-/usr/local/openresty/bin/openresty -V 2>&1 | head -n 3
+# sed 会读完全部输入（head 会在读满后关闭管道，配合 pipefail 时
+# openresty 的后续写入会拿到 SIGPIPE，导致随机 141 失败）。
+/usr/local/openresty/bin/openresty -V 2>&1 | sed -n '1,3p'
 test -x /usr/bin/apisix
 /usr/bin/apisix version
 

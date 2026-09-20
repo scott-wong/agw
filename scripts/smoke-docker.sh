@@ -8,7 +8,8 @@ SMOKE_DIR="$(cd "$(dirname "$0")/.." && pwd)/test/smoke"
 echo "[smoke] ${IMAGE} version"
 docker run --rm "$IMAGE" /usr/bin/apisix version
 echo "[smoke] openresty -V"
-docker run --rm "$IMAGE" /usr/local/openresty/bin/openresty -V 2>&1 | head -n 5
+# 用 sed 而非 head：head 提前关闭管道会让 docker/openresty 拿到 SIGPIPE（随机 141）。
+docker run --rm "$IMAGE" /usr/local/openresty/bin/openresty -V 2>&1 | sed -n '1,5p'
 echo "[smoke] tongsuo openssl version"
 docker run --rm "$IMAGE" /usr/local/openresty/tongsuo/bin/openssl version
 echo "[smoke] runtime + gm plugin + SM2/NTLS handshake"

@@ -115,7 +115,8 @@ install_tool() {
 
   local binary_path="$work_dir/$tool"
   if [[ ! -f "$binary_path" ]]; then
-    binary_path="$(find "$work_dir" -type f -name "$tool" -perm -u+x | head -n 1)"
+    # -print -quit 取代 `| head -n 1`：head 提前退出会让 find 拿到 SIGPIPE（pipefail 下 141）。
+    binary_path="$(find "$work_dir" -type f -name "$tool" -perm -u+x -print -quit)"
   fi
   if [[ -z "$binary_path" || ! -f "$binary_path" ]]; then
     rm -rf "$work_dir"

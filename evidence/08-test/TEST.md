@@ -9,3 +9,16 @@ CI 冒烟链（每次构建，GitHub Actions `build.yml`）：
 - 门禁：去字符 grep（dashboard / apisix-base 等）零命中、Grype/Trivy 阈值
 
 etcd 集群 HA 不在强制测试范围（v1 网关本体可审计优先）。
+
+## CI 稳定性修复（2026-09-20）
+
+run `35504679448` 的 RPM 冒烟（job `106064029821`）在 `openresty -V | head` 处随机以
+`Error 141` 退出：`set -o pipefail` 下 `head` 读满即关闭管道，写端（openresty / docker）
+的后续写入拿到 SIGPIPE，整条管道被判非零。断言内容本身没有变，失败与产物无关。
+
+已把这类「短读 + pipefail」用法换成读完全部输入的等价写法：
+
+- `test/smoke/runtime-smoke.sh`、`scripts/smoke-docker.sh`：`| head -n N` → `| sed -n '1,Np'`
+- `scripts/build-apisix-runtime.sh`、`scripts/install-security-tools.sh`：`find ... | head -n 1` → `find ... -print -quit`
+
+门禁强度不变，去掉的是随机失败面（同一 run 的镜像冒烟走同一脚本却通过，即该竞态的实证）。
