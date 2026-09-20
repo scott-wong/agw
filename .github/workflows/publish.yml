@@ -136,6 +136,6 @@ jobs:
           else
             gh release create "$TAG" $ASSETS --repo "$GITHUB_REPOSITORY" \
               --title "AGW $VER" \
-              --notes "AGW $VER 发布物：RPM（EL8，Anolis 8.10 验证）、镜像 ghcr.io/${{ steps.ver.outputs.ghcr_image }}（digest ${{ steps.push.outputs.digest }}）、发布物 SBOM 与 release-manifest.json 见附件。基线见 scripts/baseline.env，证据包权威归档见仓库 evidence/。"
+              --notes "AGW $VER 发布物：RPM（EL8，Anolis 8.10 验证）、镜像 ${{ steps.ver.outputs.ghcr_image }}（digest ${{ steps.push.outputs.digest }}）、发布物 SBOM 与 release-manifest.json 见附件。基线见 scripts/baseline.env，证据包权威归档见仓库 evidence/。"
             echo "[release] 已创建 Release $TAG 并附发布物"
           fi
