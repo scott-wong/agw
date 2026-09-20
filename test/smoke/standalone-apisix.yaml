@@ -1,0 +1,9 @@
+# Minimal standalone routes for Server-header branding smoke test.
+routes:
+  - id: zc-branding-probe
+    uri: /zc-health
+    upstream:
+      type: roundrobin
+      nodes:
+        "127.0.0.1:1981": 1
+#END

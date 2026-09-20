@@ -1,0 +1,29 @@
+ARG IMAGE_BASE="registry.access.redhat.com/ubi9/ubi"
+ARG IMAGE_TAG="9.6"
+
+FROM ${IMAGE_BASE}:${IMAGE_TAG}
+
+WORKDIR /tmp
+
+ARG VERSION
+ARG RUNTIME_VERSION
+ARG IMAGE_BASE
+ARG IMAGE_TAG
+ARG CODE_PATH
+
+ENV IMAGE_BASE=${IMAGE_BASE}
+ENV IMAGE_TAG=${IMAGE_TAG}
+ENV version=${VERSION}
+ENV runtime_version=${RUNTIME_VERSION}
+
+COPY ${CODE_PATH} ./
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && source "$HOME/.cargo/env" \
+    && rustup install 1.69 \
+    && rustup default 1.69 \
+    # build apisix runtime
+    && mv ./scripts/build-common.sh ./scripts/determine-dist.sh ./ \
+    && ./build-common.sh build_apisix_runtime_rpm \
+    # determine dist and write it into /tmp/dist file
+    && ./determine-dist.sh

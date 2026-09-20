@@ -1,0 +1,9 @@
+# Standalone file-driven (no etcd) config for Server-header branding smoke test.
+# APISIX 3.18: file-driven standalone = role data_plane + config_provider yaml.
+apisix:
+  node_listen:
+    - port: 9080
+deployment:
+  role: data_plane
+  role_data_plane:
+    config_provider: yaml

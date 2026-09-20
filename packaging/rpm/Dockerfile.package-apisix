@@ -1,0 +1,28 @@
+ARG APISIX_IMAGE
+
+FROM ${APISIX_IMAGE} AS apisix
+FROM api7/fpm
+
+ARG ITERATION
+ARG PACKAGE_VERSION
+ARG PACKAGE_TYPE
+ARG OPENRESTY
+ARG ARTIFACT
+ARG RUNTIME_VERSION
+
+ENV ITERATION=${ITERATION}
+ENV PACKAGE_VERSION=${PACKAGE_VERSION}
+ENV PACKAGE_TYPE=${PACKAGE_TYPE}
+ENV OPENRESTY=${OPENRESTY}
+ENV RUNTIME_VERSION=${RUNTIME_VERSION}
+ENV ARTIFACT=${ARTIFACT}
+
+COPY --from=apisix /tmp/build/output/apisix /tmp/build/output/apisix
+COPY --from=apisix /tmp/dist /tmp/dist
+COPY --from=apisix /tmp/codename /tmp/codename
+COPY --from=apisix /usr/local/openresty /tmp/build/output/apisix/usr/local/openresty
+COPY scripts/package-apisix.sh /package-apisix.sh
+COPY scripts/post-install-apisix-runtime.sh /post-install-apisix-runtime.sh
+COPY packaging/rpm/usr /usr
+
+RUN /package-apisix.sh

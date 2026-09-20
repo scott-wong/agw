@@ -1,0 +1,113 @@
+# Grype 忽略清单：仅保留已审批、上游暂无可安装修复的风险例外。
+# 生效位置：.github/workflows/build.yml 与 publish.yml 在仓库根目录执行
+#   grype <image> -c .grype.yaml --fail-on high
+# 匹配规则：CVE + 组件 + 已安装版本三者同时命中才忽略；基础镜像一旦升级这些包，
+# 本条即失效并重新拦截，必须重新评估后再决定是否续期。
+# 发现批次：AGW 镜像基线扫描（Anolis 8.10 基础层 RPM 数据库，2026-09-14 首次登记）。
+# 无修复依据：Dockerfile 构建阶段已执行 dnf -y update，装机版本即 Anolis 8.10 仓库最新；
+# Grype 数据源为 redhat:distro:redhat:8，能给出修复版本的条目（如 expat
+# CVE-2026-45186 → 0:2.5.0-2.el8_10）均指向 RHEL el8_10 勘误，Anolis 8 尚未合入；
+# 其余条目 Fix Version 为空（未知/未修复）。
+# 复核到期：2026-10-14。到期后删除忽略项并重扫，确认有修复则升级基础包，不得直接延期。
+# 风险接受记录与暴露面分析见 evidence/06-security/SECURITY.md。
+ignore:
+  # util-linux 套件（Anolis 8，Grype fix 状态 N/A）
+  - vulnerability: CVE-2026-53613
+    package: {name: util-linux, version: "2.32.1-48.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-53613
+    package: {name: libblkid, version: "2.32.1-48.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-53613
+    package: {name: libfdisk, version: "2.32.1-48.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-53613
+    package: {name: libmount, version: "2.32.1-48.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-53613
+    package: {name: libsmartcols, version: "2.32.1-48.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-53613
+    package: {name: libuuid, version: "2.32.1-48.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # libevent
+  - vulnerability: CVE-2026-63382
+    package: {name: libevent, version: "2.1.8-5.el8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-63383
+    package: {name: libevent, version: "2.1.8-5.el8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-63384
+    package: {name: libevent, version: "2.1.8-5.el8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-63385
+    package: {name: libevent, version: "2.1.8-5.el8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-63387
+    package: {name: libevent, version: "2.1.8-5.el8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-63388
+    package: {name: libevent, version: "2.1.8-5.el8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # curl / libcurl
+  - vulnerability: CVE-2026-8458
+    package: {name: curl, version: "7.61.1-35.0.2.an8.13"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-8458
+    package: {name: libcurl, version: "7.61.1-35.0.2.an8.13"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-8927
+    package: {name: curl, version: "7.61.1-35.0.2.an8.13"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-8927
+    package: {name: libcurl, version: "7.61.1-35.0.2.an8.13"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # pcre2
+  - vulnerability: CVE-2026-86145
+    package: {name: pcre2, version: "10.32-3.0.1.an8_6"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-89161
+    package: {name: pcre2, version: "10.32-3.0.1.an8_6"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # libxml2（产品 RPM 声明的依赖；默认配置不对外提供 XML 处理入口）
+  - vulnerability: CVE-2026-74860
+    package: {name: libxml2, version: "2.9.7-21.0.1.an8.6"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-86140
+    package: {name: libxml2, version: "2.9.7-21.0.1.an8.6"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # sqlite-libs
+  - vulnerability: CVE-2026-11822
+    package: {name: sqlite-libs, version: "3.26.0-21.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-11824
+    package: {name: sqlite-libs, version: "3.26.0-21.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # gnupg2 套件
+  - vulnerability: CVE-2025-68973
+    package: {name: gnupg2, version: "2.2.20-4.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+  - vulnerability: CVE-2025-68973
+    package: {name: gnupg2-smime, version: "2.2.20-4.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # brotli
+  - vulnerability: CVE-2025-6176
+    package: {name: brotli, version: "1.0.6-4.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # expat
+  - vulnerability: CVE-2026-45186
+    package: {name: expat, version: "2.5.0-2.an8"}
+    reason: "RHEL 修复为 0:2.5.0-2.el8_10，Anolis 8 未合入；复核到期 2026-10-14"
+
+  # vim-minimal
+  - vulnerability: CVE-2026-73073
+    package: {name: vim-minimal, version: "2:8.0.1763-31.0.1.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"

@@ -1,0 +1,323 @@
+name: agw build
+
+# 产品构建流（push / PR / dispatch）：基线校验 → 两段 RPM → RPM 冒烟 →
+# 交付镜像 + standalone/国密冒烟 → 自研比例 → 供应链门禁（SBOM + Grype/Trivy）
+# → 去字符门禁。发布流见 publish.yml（tag 触发）。
+# 本仓独立自洽：不引用任何外部仓库的 reusable workflow / composite action。
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: read
+
+env:
+  ANOLIS: registry.openanolis.cn/openanolis/anolisos:8.10
+
+jobs:
+  baseline:
+    name: Baseline drift check (make fetch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: make fetch
+        run: make fetch
+
+  build-rpm:
+    name: Two-stage RPM chain (runtime + agw)
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    needs: baseline
+    steps:
+      - uses: actions/checkout@v4
+      - name: make build-rpm
+        run: make build-rpm
+      - name: Record RPM checksum
+        run: sha256sum out/*.rpm | tee out/SHA256SUMS
+      - name: Upload RPM artifact
+        # artifact 通道可能受配额限制：失败不阻塞，下游 job 缺失时本地重建
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: agw-rpm
+          path: |
+            out/*.rpm
+            out/SHA256SUMS
+          retention-days: 7
+          if-no-files-found: error
+
+  verify:
+    name: RPM smoke on Anolis 8.10 (make verify)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: build-rpm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download RPM artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: agw-rpm
+          path: out
+      - name: Rebuild RPM if artifact unavailable (quota)
+        run: |
+          if ! compgen -G "out/*.rpm" > /dev/null; then
+            echo "[verify] artifact 缺失（配额），本 job 内重建 RPM"
+            make build-rpm
+          fi
+          ls -lh out/
+      - name: make verify
+        run: make verify
+
+  image:
+    name: Anolis image + standalone/gm smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs: build-rpm
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version
+        id: ver
+        run: echo "version=$(tr -d ' \n' < VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Download RPM artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: agw-rpm
+          path: out
+      - name: Rebuild RPM if artifact unavailable (quota)
+        run: |
+          if ! compgen -G "out/*.rpm" > /dev/null; then
+            echo "[image] artifact 缺失（配额），本 job 内重建 RPM"
+            make build-rpm
+          fi
+          ls -lh out/
+      - name: Stage rpms/ for the docker context
+        run: |
+          rm -rf rpms
+          mkdir -p rpms
+          cp out/agw-*.rpm rpms/
+          ls -lh rpms/
+      # buildx + gha cache：supply-chain job 用同一 cache-from scope 复用本次层，
+      # 避免为门禁再跑一遍完整 RPM 链。
+      - name: Build delivery image (buildx, gha cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packaging/docker/Dockerfile
+          load: true
+          push: false
+          tags: agw:${{ steps.ver.outputs.version }}
+          cache-from: type=gha,scope=agw-image
+          cache-to: type=gha,mode=min,scope=agw-image
+      - name: make verify-docker (standalone Server header + gm/NTLS)
+        run: make verify-docker
+      - name: Image info
+        run: |
+          docker images agw
+          echo "镜像构建与 standalone/国密冒烟通过；GHCR 推送由 publish.yml（tag 触发）承载"
+
+  ratio:
+    name: Self-developed ratio (gen-self-ratio)
+    runs-on: ubuntu-latest
+    needs: baseline
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: make fetch (APISIX snapshot for denominator)
+        run: make fetch
+      - name: gen-self-ratio
+        run: bash scripts/gen-self-ratio.sh
+      - name: Archive ratio into evidence (commit & push)
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "agw-ci-bot"
+          git config user.email "agw-ci-bot@users.noreply.github.com"
+          git add evidence/09-ip/
+          if git diff --cached --quiet; then
+            echo "[ratio] 无变化，跳过提交"
+          else
+            git commit -m "ci(agw): archive self-developed-ratio into evidence/09-ip [skip ci]"
+            if ! git push origin HEAD:${GITHUB_REF_NAME}; then
+              git pull --rebase origin ${GITHUB_REF_NAME}
+              git push origin HEAD:${GITHUB_REF_NAME}
+            fi
+          fi
+
+  supply-chain:
+    name: Supply-chain gates (SBOM + Grype + Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs: [build-rpm, image]
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 全量历史：镜像 SBOM 回填需要 push（shallow push 会被拒）
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Read version
+        id: ver
+        run: |
+          VER=$(tr -d ' \n' < VERSION)
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VER"
+
+      # 扫描源策略：优先 registry 直扫（已发布的公开镜像，免重建免落盘）；
+      # 未发布（本仓 main 分支常态）时回退本地 daemon，用 agw-image cache 复用
+      # image job 的层，避免重跑 RPM 链。
+      - name: Resolve scan reference (registry first, daemon fallback)
+        id: scanref
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          GHCR="ghcr.io/${{ github.repository_owner }}/agw"
+          GHCR=$(echo "$GHCR" | tr '[:upper:]' '[:lower:]')
+          if docker manifest inspect "$GHCR:$VER" > /dev/null 2>&1; then
+            echo "source=registry" >> "$GITHUB_OUTPUT"
+            echo "ref=registry:$GHCR:$VER" >> "$GITHUB_OUTPUT"
+            echo "[supply-chain] registry 可达，直接扫描 $GHCR:$VER"
+          else
+            echo "source=daemon" >> "$GITHUB_OUTPUT"
+            echo "ref=agw:$VER" >> "$GITHUB_OUTPUT"
+            echo "[supply-chain] registry 不可达（未发布），回退本地 daemon 扫描"
+          fi
+
+      - name: Pre-build (stage rpms/ for the docker context)
+        if: steps.scanref.outputs.source == 'daemon'
+        run: |
+          if ! compgen -G "out/agw-*.rpm" > /dev/null; then
+            make release-assets
+          else
+            rm -rf rpms
+            mkdir -p rpms
+            cp out/agw-*.rpm rpms/
+            ls -lh rpms/
+          fi
+
+      - name: Ensure image exists (rebuild with gha cache if missing)
+        if: steps.scanref.outputs.source == 'daemon'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packaging/docker/Dockerfile
+          load: true
+          push: false
+          tags: agw:${{ steps.ver.outputs.version }}
+          cache-from: type=gha,scope=agw-image
+          cache-to: type=gha,mode=min,scope=agw-supply-chain
+
+      - name: SBOM (CycloneDX, image, local file)
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          VER="${{ steps.ver.outputs.version }}"
+          mkdir -p evidence/04-sbom
+          syft scan ${{ steps.scanref.outputs.ref }} -o cyclonedx-json \
+            > "evidence/04-sbom/agw-${VER}-image.cyclonedx.json"
+          ls -lh evidence/04-sbom/
+
+      # SBOM 权威留存：回填 evidence/04-sbom/（artifact 仅 7 天且受配额限制）。
+      # 冲突容忍：同版本同内容（blob hash 一致）→ 跳过；push 被拒且 rebase 冲突
+      # （另一 run 已归档同版本不同内容）→ 以已归档内容为准，放弃本次并视为成功。
+      - name: Archive image SBOM into evidence (commit & push, conflict-tolerant)
+        if: github.event_name != 'pull_request' && github.ref_type == 'branch'
+        run: |
+          set -e
+          VER="${{ steps.ver.outputs.version }}"
+          SBOM_REL="evidence/04-sbom/agw-${VER}-image.cyclonedx.json"
+          git config user.name "agw-ci-bot"
+          git config user.email "agw-ci-bot@users.noreply.github.com"
+          git fetch origin "${GITHUB_REF_NAME}"
+          REMOTE_BLOB=$(git rev-parse "origin/${GITHUB_REF_NAME}:${SBOM_REL}" 2>/dev/null || true)
+          LOCAL_BLOB=$(git hash-object "$SBOM_REL")
+          if [ -n "$REMOTE_BLOB" ] && [ "$REMOTE_BLOB" = "$LOCAL_BLOB" ]; then
+            echo "[sbom] ${SBOM_REL} 已在远端（blob hash 一致），跳过回填"
+            exit 0
+          fi
+          git add evidence/04-sbom/
+          if git diff --cached --quiet; then
+            echo "[sbom] 无变化，跳过提交"
+            exit 0
+          fi
+          git commit -m "ci(agw): archive image SBOM ${VER} into evidence/04-sbom [skip ci]"
+          if ! git push origin HEAD:${GITHUB_REF_NAME}; then
+            if git pull --rebase origin "${GITHUB_REF_NAME}"; then
+              git push origin HEAD:${GITHUB_REF_NAME}
+            else
+              git rebase --abort
+              echo "[sbom] 警告: rebase 冲突——同版本 SBOM 已被其他 run 归档，以已归档内容为准，跳过本次回填"
+              exit 0
+            fi
+          fi
+
+      - name: Upload SBOM artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: agw-sbom-cyclonedx
+          path: evidence/04-sbom/agw-${{ steps.ver.outputs.version }}-image.cyclonedx.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Grype scan (image, HIGH gate)
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          grype db update || (sleep 30 && grype db update)
+          set +e
+          grype -c .grype.yaml ${{ steps.scanref.outputs.ref }} -o sarif --fail-on high > /tmp/grype-image.sarif
+          RC=$?
+          set -e
+          grype -c .grype.yaml ${{ steps.scanref.outputs.ref }} 2>/dev/null | tail -n 30 || true
+          exit $RC
+
+      - name: Upload Grype SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: agw-grype-sarif
+          path: /tmp/grype-image.sarif
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Trivy scan (image, gate)
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy image --severity HIGH,CRITICAL --exit-code 1 --format sarif -o /tmp/trivy-image.sarif ${{ steps.scanref.outputs.ref }}
+          trivy image --severity HIGH,CRITICAL --exit-code 0 --format table ${{ steps.scanref.outputs.ref }} | tail -n 30
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: agw-trivy-sarif
+          path: /tmp/trivy-image.sarif
+          retention-days: 7
+          if-no-files-found: warn
+
+  debrand:
+    name: De-brand grep gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: verify-debrand
+        run: bash scripts/verify-debrand.sh

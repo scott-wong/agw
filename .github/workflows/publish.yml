@@ -1,0 +1,141 @@
+name: agw publish
+
+# 发布流（tag `v*` 或手动触发）：
+#   构建最终 RPM → 组装并推送 GHCR 三标签（<版本> / <上游版本> / latest）
+#   → 回拉校验（Anolis 8.10 + 版本 + Server: agw + 国密握手）→ 生成发布物 SBOM
+#   → 生成发布清单 → GitHub Release 附件（RPM + SBOM + 清单）。
+# 本仓独立自洽：不引用任何外部仓库的 reusable workflow。
+# <版本> 标签与 Git tag 不可移动——重新发布一律 bump VERSION。
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    name: Build, push GHCR, verify pullback, release
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # build-push 带 cache-to: type=gha，默认 docker 驱动不支持 cache 导出，
+      # 必须显式起 buildx 容器驱动。tag 调用只恢复缓存，不创建 tag 专属缓存。
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Resolve version and image names
+        id: ver
+        run: |
+          set -e
+          VER=$(tr -d ' \n' < VERSION)
+          UPSTREAM=$(echo "$VER" | cut -d- -f1)
+          # ghcr 要求全小写
+          GHCR="ghcr.io/${{ github.repository_owner }}/agw"
+          GHCR=$(echo "$GHCR" | tr '[:upper:]' '[:lower:]')
+          TAGS="$GHCR:$VER"$'\n'"$GHCR:$UPSTREAM"$'\n'"$GHCR:latest"
+          {
+            echo "version=$VER"
+            echo "upstream=$UPSTREAM"
+            echo "ghcr_image=$GHCR"
+            echo "tags<<TAGS_EOF"
+            echo "$TAGS"
+            echo "TAGS_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "$TAGS"
+
+      - name: Build release assets in place (make release-assets)
+        run: make release-assets
+
+      - name: Collect release assets
+        run: |
+          set -e
+          mkdir -p /tmp/release-assets
+          ASSETS=$(ls out/agw-*.rpm 2>/dev/null | grep -v -e debuginfo -e debugsource || true)
+          [ -n "$ASSETS" ] || { echo "未找到发布物（glob: out/agw-*.rpm）"; ls -R . | head -n 40; exit 1; }
+          for a in $ASSETS; do
+            cp "$a" /tmp/release-assets/
+            sha256sum "/tmp/release-assets/$(basename "$a")"
+          done
+          RPM_NAME=$(basename "$(echo "$ASSETS" | head -n1)")
+          echo "rpm_name=$RPM_NAME" >> "$GITHUB_OUTPUT"
+        id: assets
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push to GHCR
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packaging/docker/Dockerfile
+          push: true
+          tags: ${{ steps.ver.outputs.tags }}
+          cache-from: type=gha,scope=agw-publish
+          cache-to: ${{ github.ref_type == 'tag' && '' || 'type=gha,mode=min,scope=agw-publish' }}
+          platforms: linux/amd64
+
+      # 回拉校验：发布的镜像必须能在干净环境跑起来，且底座/品牌/国密三项都对。
+      - name: Verify pushed image (pullback)
+        run: |
+          GHCR="${{ steps.ver.outputs.ghcr_image }}"
+          VER="${{ steps.ver.outputs.version }}"
+          docker pull "$GHCR:$VER"
+          docker run --rm --entrypoint cat "$GHCR:$VER" /etc/os-release | grep -qi anolis && echo "GHCR Anolis OK"
+          docker run --rm --entrypoint bash "$GHCR:$VER" -c '/usr/bin/apisix version | head -n1'
+          bash scripts/smoke-docker.sh "$GHCR:$VER"
+
+      # Release 必须永久留存镜像 SBOM：直接扫描刚推送的 GHCR 镜像，
+      # 不依赖 build 流的短期 artifact 或异步 evidence 回填。
+      - name: Generate image SBOM for Release
+        run: |
+          set -e
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          GHCR="${{ steps.ver.outputs.ghcr_image }}"
+          VER="${{ steps.ver.outputs.version }}"
+          syft scan "registry:$GHCR:$VER" -o cyclonedx-json \
+            > "/tmp/release-assets/agw-${VER}-image.cyclonedx.json"
+          ls -lh "/tmp/release-assets/agw-${VER}-image.cyclonedx.json"
+
+      - name: Write release manifest
+        env:
+          RELEASE_VERSION: ${{ steps.ver.outputs.version }}
+          IMAGE_REPOSITORY: ${{ steps.ver.outputs.ghcr_image }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          RPM_FILE: /tmp/release-assets/${{ steps.assets.outputs.rpm_name }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          OUT: /tmp/release-assets/release-manifest.json
+        run: bash scripts/write-release-manifest.sh
+
+      # 发布物随附：artifact 通道受配额限制不可靠，附到 GitHub Release 永久留存
+      - name: Attach release assets to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          VER="${{ steps.ver.outputs.version }}"
+          TAG="v$VER"
+          ASSETS=$(ls /tmp/release-assets/*)
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" $ASSETS --clobber --repo "$GITHUB_REPOSITORY"
+            echo "[release] 发布物已附到 Release $TAG"
+          else
+            gh release create "$TAG" $ASSETS --repo "$GITHUB_REPOSITORY" \
+              --title "AGW $VER" \
+              --notes "AGW $VER 发布物：RPM（EL8，Anolis 8.10 验证）、镜像 ghcr.io/${{ steps.ver.outputs.ghcr_image }}（digest ${{ steps.push.outputs.digest }}）、发布物 SBOM 与 release-manifest.json 见附件。基线见 scripts/baseline.env，证据包权威归档见仓库 evidence/。"
+            echo "[release] 已创建 Release $TAG 并附发布物"
+          fi
