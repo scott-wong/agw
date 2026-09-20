@@ -25,8 +25,9 @@ packaging/docker/Dockerfile               Anolis 8.10 底座 + dnf localinstall 
    并断言 `HEAD == scripts/baseline.env` 里登记的 `TONGSHUO_COMMIT`（master 漂移即失败）；
 2. `./config shared enable-ntls zlib ... --libdir=lib64`（`--libdir=lib64` 是 RPM 体系要求；
    Tongsuo 已移除的 `enable-camellia` / `enable-seed` / `enable-md2` 不再传入）；
-3. `make install_sw install_ssldirs`，并把本仓 `packaging/rpm/conf/tongsuo/openssl.cnf`
-   覆盖到 `$OPENSSL_PREFIX/ssl/openssl.cnf`；
+3. `make install_sw install_ssldirs`，并补 `lib -> lib64` 兼容链接（lua-resty-saml
+   的 xmlsec1 configure 只探测 `<prefix>/lib`），再把本仓
+   `packaging/rpm/conf/tongsuo/openssl.cnf` 覆盖到 `$OPENSSL_PREFIX/ssl/openssl.cnf`；
 4. 断言 `$OPENSSL_PREFIX/bin/openssl version` 以 `Tongsuo: Tongsuo ` 开头。
 
 OpenResty 侧通过 `cc_opt` / `ld_opt` 指向 `$OPENSSL_PREFIX`（`lib64` + rpath）来链接

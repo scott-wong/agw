@@ -91,6 +91,14 @@ install_tongsuo(){
       --with-zlib-include=$zlib_prefix/include
     make -j $(nproc) LD_LIBRARY_PATH= CC="gcc"
     sudo make install_sw install_ssldirs
+    # xmlsec1（lua-resty-saml 的构建依赖）只探测 <prefix>/lib/libcrypto.{so,a}，
+    # 而本仓库按 RPM 体系使用 --libdir=lib64。补一个 lib -> lib64 兼容链接，
+    # 让构建期依赖解析与运行期 rpath（仍为 lib64）各自可用。
+    if [ ! -e "$OPENSSL_PREFIX/lib/libcrypto.so" ] && [ ! -e "$OPENSSL_PREFIX/lib/libcrypto.a" ]; then
+        sudo rmdir "$OPENSSL_PREFIX/lib" 2>/dev/null || true
+        sudo ln -sfn lib64 "$OPENSSL_PREFIX/lib"
+    fi
+    test -e "$OPENSSL_PREFIX/lib/libcrypto.so" || test -e "$OPENSSL_PREFIX/lib/libcrypto.a"
     if [ -f "$OPENSSL_CONF_PATH" ]; then
         sudo cp "$OPENSSL_CONF_PATH" "$OPENSSL_PREFIX"/ssl/openssl.cnf
     fi
