@@ -28,7 +28,7 @@ _Avoid_: patches/, third_party/, 第三方补丁
 
 **modules/**:
 AGW 自研模块目录；v1 为空占位。
-_Avoid_: src/, lib/, zc-modules
+_Avoid_: src/, lib/ 等泛化目录
 
 **零自研**:
 v1 的明确立场——不提供任何 AGW 原创代码，`self-developed-ratio.json` 的分子恒为 0。

@@ -77,6 +77,20 @@ install_apisix() {
     # install rust
     install_rust
 
+    # luarocks 的 OPENSSL_DIR 来自 apisix 的 linux-install-luarocks.sh：它只探测
+    # $OPENRESTY_PREFIX/{openssl,openssl3,openssl111}。AGW 的 TLS 基线装在
+    # $OPENRESTY_PREFIX/tongsuo（见 scripts/baseline.env），三个候选都不存在，
+    # 该脚本会把 OPENSSL_DIR 留在 /usr/local/openresty/openssl 这个不存在的路径上，
+    # 于是 lua-resty-saml 依赖的 xmlsec1 configure 报
+    # "not found: .../include/openssl/opensslv.h" 而中断。
+    # 在解析依赖前显式改写为 Tongsuo 前缀（安装布局 libdir=lib64）。
+    OPENSSL_PREFIX=${OPENSSL_PREFIX:-/usr/local/openresty/tongsuo}
+    test -f "$OPENSSL_PREFIX/include/openssl/opensslv.h"
+    test -d "$OPENSSL_PREFIX/lib64"
+    luarocks config variables.OPENSSL_DIR "$OPENSSL_PREFIX"
+    luarocks config variables.OPENSSL_LIBDIR "$OPENSSL_PREFIX/lib64"
+    luarocks config variables.OPENSSL_INCDIR "$OPENSSL_PREFIX/include"
+
     # build the lib and specify the storage path of the package installed
     # To be removed after https://github.com/luarocks/luarocks/issues/1797 is fixed
     luarocks make ./apisix-master-${iteration}.rockspec --tree=/tmp/build/output/apisix/usr/local/apisix/deps --local

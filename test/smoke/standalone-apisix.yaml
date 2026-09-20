@@ -1,7 +1,7 @@
 # Minimal standalone routes for Server-header branding smoke test.
 routes:
-  - id: zc-branding-probe
-    uri: /zc-health
+  - id: branding-probe
+    uri: /agw-health
     upstream:
       type: roundrobin
       nodes:

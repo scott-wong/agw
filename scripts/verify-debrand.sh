@@ -17,7 +17,7 @@ ALLOWED=(
   "./packaging/fpm/Dockerfile"
 )
 # 禁词：内部痕迹 + 未使用发行形态。`\bacr\b` 用词边界，避免误伤 across 之类单词。
-PATTERN='众澄|zc[-_]agw|eunited|codeup|云效|aliyuncs|\bacr\b|dashboard|apisix-base|debian|bookworm'
+PATTERN='众澄|\bzc\b|zc[-_]agw|eunited|codeup|云效|aliyuncs|\bacr\b|dashboard|apisix-base|debian|bookworm'
 
 HITS=$(grep -rniI -E "$PATTERN" \
   --exclude-dir=.git --exclude-dir=evidence --exclude-dir=distfiles \
