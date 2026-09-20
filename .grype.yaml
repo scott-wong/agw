@@ -3,7 +3,8 @@
 #   grype <image> -c .grype.yaml --fail-on high
 # 匹配规则：CVE + 组件 + 已安装版本三者同时命中才忽略；基础镜像一旦升级这些包，
 # 本条即失效并重新拦截，必须重新评估后再决定是否续期。
-# 发现批次：AGW 镜像基线扫描（Anolis 8.10 基础层 RPM 数据库，2026-09-14 首次登记）。
+# 发现批次：AGW 镜像基线扫描（Anolis 8.10 基础层 RPM 数据库）。
+#   首批 2026-09-14 登记（19 CVE / 27 条）；第二批 2026-09-20 登记（7 CVE / 10 条）。
 # 无修复依据：Dockerfile 构建阶段已执行 dnf -y update，装机版本即 Anolis 8.10 仓库最新；
 # Grype 数据源为 redhat:distro:redhat:8，能给出修复版本的条目（如 expat
 # CVE-2026-45186 → 0:2.5.0-2.el8_10）均指向 RHEL el8_10 勘误，Anolis 8 尚未合入；
@@ -111,3 +112,42 @@ ignore:
   - vulnerability: CVE-2026-73073
     package: {name: vim-minimal, version: "2:8.0.1763-31.0.1.an8"}
     reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-14，复核到期 2026-10-14"
+
+  # ---- 第二批（2026-09-20）----
+  # 触发：build.yml 供应链门禁首次推进到 Grype 步骤时新增报出，全部为 Anolis 8.10
+  # 基础层 RPM；Grype 数据源（redhat:distro:redhat:8）当前 Fix Version 为空。
+  # bind-export-libs（BIND 导出库）：镜像内不启动 named，无 53 端口监听，无解析器入口。
+  - vulnerability: CVE-2026-19666
+    package: {name: bind-export-libs, version: "32:9.11.36-16.0.1.an8.14"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-19667
+    package: {name: bind-export-libs, version: "32:9.11.36-16.0.1.an8.14"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-80274
+    package: {name: bind-export-libs, version: "32:9.11.36-16.0.1.an8.14"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+
+  # expat：与首批 CVE-2026-45186 同版本，第二批新增 CVE。
+  - vulnerability: CVE-2026-66046
+    package: {name: expat, version: "2.5.0-2.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+
+  # unbound（unbound-libs + python3-unbound）：镜像内不启动 unbound，无 53 端口监听。
+  - vulnerability: CVE-2026-81634
+    package: {name: unbound-libs, version: "1.16.2-9.0.3.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-81634
+    package: {name: python3-unbound, version: "1.16.2-9.0.3.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-81642
+    package: {name: unbound-libs, version: "1.16.2-9.0.3.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-81642
+    package: {name: python3-unbound, version: "1.16.2-9.0.3.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-82717
+    package: {name: unbound-libs, version: "1.16.2-9.0.3.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
+  - vulnerability: CVE-2026-82717
+    package: {name: python3-unbound, version: "1.16.2-9.0.3.an8"}
+    reason: "Anolis 8 无修复；AGW 风险接受已登记 2026-09-20，复核到期 2026-10-14"
