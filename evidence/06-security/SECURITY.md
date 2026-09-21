@@ -13,6 +13,32 @@
   门禁证据由该 run 承担，发布清单记录 `source.commit` 与 `workflowRun` 以便回溯。
   发布镜像 digest 与 build 流被扫描的本地构建镜像不同，属已知缺口，见文末。
 
+## 基础层更换后的复核（2026-09-21）
+
+交付镜像基础层由上游 `registry.openanolis.cn/openanolis/anolisos:8.10` 换成自建加固基线
+`ghcr.io/scott-wong/anolis-secure:latest`（`docs/adr/0005`）。更换后 `build.yml`
+run `35553160358`（job `106193812254`）重扫：Grype/Trivy 门禁全绿，未产生需要新增
+例外的 HIGH/CRITICAL。
+
+**发布镜像（不是构建镜像）复扫**：为覆盖「发布镜像不做 CVE 复扫」这一已知缺口，本次
+额外用本机 Grype `0.119.0`（DB `v6.1.9`，built `2026-09-20T06:27:54Z`）扫描已发布的
+`ghcr.io/scott-wong/agw:3.18.0-agw.2`（`--platform linux/amd64`，`-c .grype.yaml`）：
+
+| 指标 | 结果 |
+| --- | --- |
+| 报告命中（未忽略） | 692 条，全部为 Low(381) / Medium(310) / Negligible(1)，**无 HIGH/CRITICAL** |
+| 被忽略命中 | 37 条，与 `.grype.yaml` 登记的 37 条「CVE + 组件 + 版本」**逐条一一对应** |
+| 登记未命中（陈旧例外） | 0 条 |
+| 未登记却被忽略 | 0 条 |
+| 被忽略的 HIGH/CRITICAL | 37 条（26 个 CVE） |
+
+结论：基础层更换没有使任何例外失效或漂移，本批风险接受台账继续有效，复盘日期仍为
+2026-10-14。
+
+安全侧新增的一条约束来自非 root 运行：容器内 `appuser(10001)` 只能写
+`/usr/local/apisix/conf`、`/usr/local/apisix/logs` 与 nginx 的 5 个 temp 目录，
+挂载卷若需可写，必须在部署侧保证该 uid 有权限。
+
 ## 风险接受批次索引
 
 | 批次 | 登记日期 | 触发场景 | 台账 | 新增 CVE | 例外条目 | 复核到期 |
