@@ -1,10 +1,10 @@
 {
   "product": "AGW",
-  "version": "3.18.0-agw.1",
+  "version": "3.18.0-agw.2",
   "numerator": 0,
   "numerator_detail": {"vendor_patch_added_lines": 0, "module_code_lines": 0},
   "denominator": 90430,
   "denominator_detail": "APISIX 3.18.0 基线源码行数（lua/c/h）",
   "ratio": 0.0,
-  "measured_at": "2026-09-20T10:50:20Z"
+  "measured_at": "2026-09-21T02:08:57Z"
 }
