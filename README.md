@@ -1,74 +1,73 @@
 # AGW
 
-AGW is an independent, open API gateway distribution built on
-[Apache APISIX](https://github.com/apache/apisix). It ships exactly two
-deliverables — one RPM and one container image — for a fixed, verifiable
-platform baseline, with a Tongsuo-based TLS runtime that provides Chinese
-national cryptography (SM2/SM3/SM4, NTLS).
+AGW 是一个独立、开放的 API 网关发行版，基于 [Apache APISIX](https://github.com/apache/apisix)。
+只交付两件东西——一个 RPM 与一个容器镜像——并且只承诺一条可验证的平台基线；
+TLS 运行时改用 [Tongsuo（铜锁）](https://github.com/Tongsuo-Project/Tongsuo)，
+开箱提供国密（SM2/SM3/SM4、NTLS）能力。
 
-[中文说明（简体）](./README.zh-CN.md)
+- 关系表述：**based on Apache APISIX**。AGW 不改动上游的路由、插件与协议行为，
+  差异全部在发行形态（见下表）。
+- 承诺平台：**Anolis OS 8.10 × x86_64**；其他平台未经验证，不做承诺。
+- v1 范围：只做网关本体。管理台（Admin UI）、etcd 与企业增强均不在交付物内。
 
-- Upstream relationship: **based on Apache APISIX**. AGW carries no routing,
-  plugin or protocol behavior changes of its own; the differences are all
-  distribution-level (see below).
-- Guaranteed platform: **Anolis OS 8.10 × x86_64**. Other platforms are not
-  tested and not promised.
-- Scope of v1: gateway runtime only. The Admin UI, etcd and any enterprise
-  add-ons are not part of the deliverables.
+## 交付物
 
-## Deliverables
+| 交付物 | 名称 | 说明 |
+|--------|------|------|
+| RPM（EL8） | `agw-3.18.0-agw.2.el8.x86_64.rpm` | 唯一 RPM；不交付 `apisix-runtime` / `apisix` 中间包 |
+| 镜像 | `ghcr.io/scott-wong/agw:3.18.0-agw.2` | 标签 `3.18.0-agw.2`（不可移动）、`3.18.0`、`latest` |
 
-| Artifact | Name | Notes |
-|----------|------|-------|
-| RPM (EL8) | `agw-3.18.0-agw.1.el8.x86_64.rpm` | the only RPM delivered; no intermediate `apisix-runtime` / `apisix` packages |
-| Image | `ghcr.io/scott-wong/agw:3.18.0-agw.1` | tags `3.18.0-agw.1` (immutable), `3.18.0`, `latest` |
+发布资产挂在 GitHub Release 上，附带发布镜像的 CycloneDX SBOM 与记录
+RPM SHA256 / 镜像 digest 的 `release-manifest.json`。
 
-Release assets are attached to GitHub Releases, together with a CycloneDX
-SBOM of the published image and a `release-manifest.json` that records the
-RPM SHA256 and the image digest.
+容器默认以**非 root** 用户 `appuser（uid 10001）` 运行；APISIX 需要写的目录
+（`/usr/local/apisix/conf`、`/usr/local/apisix/logs` 与 nginx 的 5 个 `*_temp`）
+已在镜像内显式授权。需要挂载配置或日志卷时，请保证挂载点对该 uid 可写。
 
-## Baseline
+## 基线
 
-`scripts/baseline.env` is the single source of truth. `make fetch` verifies
-every pin against upstream before a build starts, and fails on drift.
+唯一事实源是 `scripts/baseline.env`；`make fetch` 在构建前逐个校验，漂移即失败。
 
-| Item | Pin |
-|------|-----|
-| Gateway | Apache APISIX `3.18.0` @ `0796d9c2cbedb1f8bf8194292ff526599f4fde20` |
-| Runtime | OpenResty `1.31.1.1` (release tarball, SHA256 verified) |
-| TLS | [Tongsuo](https://github.com/Tongsuo-Project/Tongsuo) `master` @ `540603a3ff952ce00590bca022015feffbfb7597` (tag `8.5.0-pre2`, OpenSSL 3.5.4 core), built with `enable-ntls` |
-| Runtime modules | 7 upstream modules, each pinned to a tag + commit |
+| 项 | 锁定值 |
+|----|--------|
+| 网关 | Apache APISIX `3.18.0` @ `0796d9c2cbedb1f8bf8194292ff526599f4fde20` |
+| 运行时 | OpenResty `1.31.1.1`（release tarball，SHA256 校验） |
+| TLS | [Tongsuo](https://github.com/Tongsuo-Project/Tongsuo) `master` @ `540603a3ff952ce00590bca022015feffbfb7597`（tag `8.5.0-pre2`，OpenSSL 3.5.4 内核），构建参数含 `enable-ntls` |
+| 运行时模块 | 7 个上游模块，全部锁定 tag + commit |
+| 交付镜像基础层 | `ghcr.io/scott-wong/anolis-secure:latest`，锁定 manifest digest `sha256:80a5453d…be265f1`，运行用户 `10001:10001` |
 
-Both `ngx_multi_upstream_module` and `apisix-nginx-module` patch nginx /
-OpenResty bundle sources, which is what makes the OpenResty version a hard
-constraint. The pins for OpenResty `1.31.1.1` are carried as vendored patches
-under `vendor-patches/` (upstream master + the relevant PR); each `patch.sh`
-header records its source PR and the condition for dropping the override.
+`ngx_multi_upstream_module` 与 `apisix-nginx-module` 会直接 patch nginx / OpenResty
+bundle 源码，这是 OpenResty 版本的硬约束；OpenResty `1.31.1.1` 的适配以 vendored
+补丁形式放在 `vendor-patches/`（上游 master + 对应 PR），来源 PR 与回退条件写在
+各 `patch.sh` 头注。
 
-## Differences from upstream APISIX
+交付镜像的基础层是自建的加固 Anolis 8.10 基线，上游每周一重建，因此 `:latest`
+会前进；`make fetch` 校验它当前指向的 digest 是否仍等于登记值，漂移即红灯，
+必须先重扫供应链门禁再更新 `BASE_IMAGE_DIGEST`。
 
-| Aspect | Upstream APISIX 3.18.0 | AGW |
-|--------|------------------------|-----|
-| Response header | `Server: APISIX/<version>` | `Server: agw` (rewritten while packaging; asserted in the standalone smoke test) |
-| TLS runtime | official prebuilt OpenResty | OpenResty compiled against Tongsuo, `enable-ntls` |
-| GM plugin | opt-in, needs a Tongsuo runtime | `gm` is part of the default plugin list; the image/RPM smoke test performs a real SM2 dual-certificate NTLS handshake |
-| Deliverables | deb / rpm / apk / Docker / Helm | RPM (EL8) + Anolis 8.10 image only |
-| Admin UI | separate upstream product | not delivered |
-| Config store | etcd built-in or external | etcd must be external (3.5.x / 3.6); standalone file-driven mode (`config_provider: yaml`) is supported |
+## 与上游 APISIX 的差异
 
-## Chinese national cryptography (GM / NTLS)
+| 方面 | 上游 APISIX 3.18.0 | AGW |
+|------|--------------------|-----|
+| 响应头 | `Server: APISIX/<版本>` | `Server: agw`（打包期改写，standalone 冒烟断言） |
+| TLS 运行时 | 官方预编译 OpenResty | 对 Tongsuo 编译的 OpenResty，启用 `enable-ntls` |
+| 国密插件 | 需自行启用，且依赖 Tongsuo 运行时 | `gm` 进入默认插件表；RPM/镜像冒烟做真实 SM2 双证书 NTLS 握手 |
+| 基础镜像与运行用户 | 各发行形态各自为政，容器默认 root | 统一自建加固基础层，以非 root `appuser:10001` 运行 |
+| 交付形态 | deb / rpm / apk / Docker / Helm | 仅 RPM（EL8）+ Anolis 8.10 镜像 |
+| 管理台 | 上游独立产品 | 不交付 |
+| 配置中心 | etcd 内置/外置均可 | etcd 必须外置（3.5.x / 3.6）；支持 standalone 文件驱动（`config_provider: yaml`） |
 
-The runtime links Tongsuo's `libssl.so.3` / `libcrypto.so.3`, so NTLS with SM2
-dual certificates is available out of the box:
+## 国密（GM / NTLS）
+
+运行时链接 Tongsuo 的 `libssl.so.3` / `libcrypto.so.3`，因此 SM2 双证书 NTLS
+开箱可用：
 
 ```sh
-# in the container / on the RPM host
 /usr/local/openresty/tongsuo/bin/openssl version
 # Tongsuo: Tongsuo 8.5.0-pre2 (Library: Tongsuo 8.5.0-pre2)
 ```
 
-APISIX's default cipher list does not contain the GM suites, so enable them in
-`conf/config.yaml` when you terminate GM TLS:
+APISIX 默认 cipher 不含国密套件，终止国密 TLS 时需在 `conf/config.yaml` 中显式加入：
 
 ```yaml
 apisix:
@@ -76,56 +75,51 @@ apisix:
     ssl_ciphers: ECDHE-SM2-WITH-SM4-SM3:HIGH:!aNULL:!MD5
 ```
 
-The `gm` plugin (dual-certificate configuration) is already in the default
-plugin list of AGW builds, so per-SNI GM certificates can be managed through the
-Admin API as documented upstream in `docs/zh/latest/plugins/gm.md`.
+`gm` 插件（动态配置国密双证书）已进入 AGW 构建的默认插件表，可按上游
+`docs/zh/latest/plugins/gm.md` 通过 Admin API 按 SNI 配置双证书。
 
-## Repository layout
+## 目录
 
 ```text
-VERSION                  single source of truth for the version
-Makefile                 fetch / build-rpm / build-docker / verify / verify-docker / release-assets / clean
-scripts/                 build scripts + baseline.env (baseline source of truth)
-vendor-patches/          numbered vendored patch modules (source PR + drop condition in each patch.sh header)
-modules/                 AGW-owned modules (empty placeholder in v1; zero self-developed code)
-packaging/rpm/           runtime image, final RPM Dockerfiles, fpm input tree and the Tongsuo openssl.cnf
-packaging/docker/        Anolis 8.10 delivery image
-test/smoke/              smoke assets (limit lua, standalone config, Tongsuo GM handshake, runtime assertions)
-evidence/01…10/          evidence pack (authoritative archive; 04-sbom / 09-ip are filled by CI)
-docs/build-notes.md      build chain notes
-docs/adr/                architecture decision records
+VERSION                 版本唯一事实源
+Makefile                fetch / build-rpm / build-docker / verify / verify-docker / release-assets / clean
+scripts/                构建脚本 + baseline.env（基线事实源）
+vendor-patches/         序号化 vendor 补丁模块（来源 PR 与回退条件见各 patch.sh 头注）
+modules/                AGW 自研模块（v1 空占位，零自研）
+packaging/rpm/          运行时镜像与最终 RPM 构建 Dockerfile + fpm 输入树 + Tongsuo openssl.cnf
+packaging/docker/       交付镜像 Dockerfile（自建加固 Anolis 8.10 基础层 + 非 root 运行）
+test/smoke/             冒烟资产（限流 lua、standalone 配置、Tongsuo 国密握手、运行时断言）
+evidence/01…10/         证据包（权威归档；04-sbom / 09-ip 由 CI 回填）
+docs/build-notes.md     构建链路说明
+docs/adr/               架构决策记录
 ```
 
-## Build locally (requires Docker)
+## 本地构建（需 Docker）
 
 ```sh
-make fetch          # verify every baseline pin, then fetch the APISIX snapshot into build/src
-make build-rpm      # runtime image -> final agw RPM (out/ holds exactly one product RPM)
-make verify         # Anolis 8.10 container: install the RPM + Tongsuo/GM + openresty -V + apisix version + limit lua
-make build-docker   # stage rpms/ and assemble the delivery image agw:<version>
-make verify-docker  # image smoke: apisix init + standalone Server: agw assertion + SM2/NTLS handshake
+make fetch          # 校验全部基线 pin，取 APISIX 快照至 build/src
+make build-rpm      # 运行时镜像 -> 最终 agw RPM（out/ 只保留一个产品 RPM）
+make verify         # Anolis 8.10 容器：装 RPM + Tongsuo/国密 + openresty -V + apisix version + 限流 lua
+make build-docker   # 备料 rpms/ 并组装交付镜像 agw:<版本>
+make verify-docker  # 镜像冒烟：apisix init + standalone Server: agw 断言 + SM2/NTLS 握手
 make clean
 ```
 
 ## CI/CD
 
-Everything runs on GitHub Actions and GHCR; there is no other CI system.
+全部在 GitHub Actions + GHCR 上完成，没有其他 CI 系统。
 
-- `.github/workflows/build.yml` (push to `main`, pull requests, manual):
-  baseline drift check → two-stage RPM chain → RPM smoke on Anolis 8.10 →
-  delivery image + standalone/GM smoke → self-developed ratio → supply-chain
-  gates (SBOM + Grype HIGH + Trivy HIGH/CRITICAL) → de-brand grep gate.
-- `.github/workflows/publish.yml` (tag `v*`, manual): builds the final RPM,
-  pushes the image to GHCR with the three tags above, verifies the image by
-  pulling it back and re-running the standalone/GM smoke test, then publishes
-  the RPM, the image SBOM and `release-manifest.json` to a GitHub Release.
+- `.github/workflows/build.yml`（push main / PR / 手工）：基线校验 → 两段 RPM →
+  Anolis 8.10 RPM 冒烟 → 交付镜像 + standalone/国密冒烟 → 自研比例 →
+  供应链门禁（SBOM + Grype HIGH + Trivy HIGH/CRITICAL）→ 去字符 grep 门禁。
+- `.github/workflows/publish.yml`（tag `v*` / 手工）：构建最终 RPM，推送三个标签的
+  镜像到 GHCR，回拉镜像重跑 standalone/国密冒烟，再把 RPM、镜像 SBOM 与
+  `release-manifest.json` 发布到 GitHub Release。
 
-Both workflows are self-contained: they reference no reusable workflow or
-composite action from another repository.
+两个工作流都自洽：不引用任何外部仓库的 reusable workflow 或 composite action。
 
-Releases are immutable. `<version>` tags (and Git tags) are never moved —
-publishing again always means bumping `VERSION`.
+发布不可变：`<版本>` 标签与 Git tag 一律不移动，重新发布只能 bump `VERSION`。
 
-## License
+## 许可
 
-Apache License 2.0 — see [LICENSE](./LICENSE).
+Apache License 2.0 — 见 [LICENSE](./LICENSE)。

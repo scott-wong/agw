@@ -1,5 +1,5 @@
 # AGW 构建入口（product-repo-contract 公共动词）
-# 版本事实源：VERSION（3.18.0-agw.1）；基线事实源：scripts/baseline.env
+# 版本事实源：VERSION（3.18.0-agw.2）；基线事实源：scripts/baseline.env
 SHELL := /bin/bash
 
 UPSTREAM_VERSION := $(shell cut -d- -f1 < VERSION)

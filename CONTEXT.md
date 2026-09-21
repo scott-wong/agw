@@ -14,6 +14,10 @@ _Avoid_: 网关, gateway, apisix（指代产品时）
 `scripts/baseline.env` 中锁定的上游版本事实合集——APISIX tag + commit、OpenResty tarball SHA256、Tongsuo commit、7 个运行时模块 tag + commit。
 _Avoid_: 版本表, 依赖锁, lockfile
 
+**基础层**:
+交付镜像的 `FROM` 镜像——`ghcr.io/scott-wong/anolis-secure`（自建加固 Anolis 8.10，上游每周重建），digest 登记在 `scripts/baseline.env` 并由 `make fetch` 校验；镜像以该基础层自带的非 root 用户 `10001:10001` 运行。
+_Avoid_: 基础镜像, base image（与「运行时镜像」混用）
+
 **运行时镜像**:
 把 OpenResty、Tongsuo 与 7 个运行时模块编译到 `/usr/local/openresty` 的中间产物，只作为最终 RPM 的输入。
 _Avoid_: 基础镜像, base image, openresty 镜像
@@ -39,7 +43,7 @@ _Avoid_: 无自研, 全自研
 _Avoid_: 商密, SM2-only, 国密开关
 
 **发布清单**:
-`scripts/write-release-manifest.sh` 产出的发布事实记录（版本、tag、workflowRun、镜像 digest、RPM SHA256）。
+`scripts/write-release-manifest.sh` 产出的发布事实记录（版本、tag、workflowRun、镜像 digest、RPM SHA256、基础层引用与 digest、运行用户）。
 _Avoid_: release notes, 发布说明
 
 **去字符门禁**:

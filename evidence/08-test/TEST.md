@@ -6,6 +6,7 @@ CI 冒烟链（每次构建，GitHub Actions `build.yml`）：
 - TLS：`openresty -V` 含 Tongsuo 版本、`ldd` 断言动态链接 Tongsuo、`openssl ciphers` 含 NTLSv1.1 套件
 - 国密：`apisix init` + 默认插件表含 `gm` + SM2 双证书 NTLS 真实握手（`test/smoke/gm-ntls-handshake.sh`）
 - 镜像：`apisix init`（无 etcd 生成 nginx.conf）+ standalone 文件驱动启动断言 `Server: agw`
+- 镜像构建期：在运行期用户（`10001:10001`）下真跑 `apisix init`，断言 `conf/` 与 `logs/` 可写（非 root 运行的前置条件）
 - 门禁：去字符 grep（dashboard / apisix-base 等）零命中、Grype/Trivy 阈值
 
 etcd 集群 HA 不在强制测试范围（v1 网关本体可审计优先）。

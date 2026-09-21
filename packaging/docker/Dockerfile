@@ -1,8 +1,14 @@
-# Anolis OS 8.10 base for APISIX RPM installation
+# Anolis OS 8.10 加固基础层 + APISIX RPM 安装
+# 基础层：ghcr.io/scott-wong/anolis-secure（自建、每周重建、默认非 root 用户
+# appuser:10001）。`:latest` 会随上游重建前进，因此 digest 固定登记在
+# scripts/baseline.env 的 BASE_IMAGE_DIGEST，由 `make fetch` 强制校验；决策见
+# docs/adr/0005-delivery-image-hardened-base.md。
+# 安装方式：`dnf localinstall` 本仓构建的最终 RPM（不依赖上游制品仓库）。
 # Reference: https://github.com/apache/apisix-docker/blob/master/redhat/Dockerfile
-# This Dockerfile installs the locally built APISIX RPMs (built by publish-rpm.yml)
-# via `dnf localinstall` instead of pulling from apiseven repo.
-FROM registry.openanolis.cn/openanolis/anolisos:8.10
+FROM ghcr.io/scott-wong/anolis-secure:latest
+
+# 安装 RPM 必须 root：基础层默认 USER appuser，这里显式提权，末尾再切回 10001:10001。
+USER root
 
 # No ARG needed for version when using local RPMs, but keep for label compatibility
 ARG APISIX_VERSION
@@ -62,10 +68,32 @@ RUN set -x \
     && test -z "$(find /usr/share/python-wheels -maxdepth 1 -type f -name '*.whl' \
          -print -quit 2>/dev/null)" \
     && dnf clean all \
-    && rm -rf /var/cache/dnf /var/cache/yum /tmp/*.rpm \
-    && /usr/local/openresty/bin/openresty -V 2>&1 | head -n 5 \
+    && rm -rf /var/cache/dnf /var/cache/yum /tmp/*.rpm
+
+# 运行期用户是基础层自带的 appuser(10001)。RPM 装出来的 conf/ 与 logs/ 属 root:root，
+# 而 APISIX 必须在运行期写它们（`apisix init` 生成 conf/nginx.conf；nginx 写 error.log /
+# pid / *_temp）。这里显式授权，然后在**切换后的运行期用户**下真跑一次 init —— 权限不对
+# 就在构建期失败，不会留到运行期。
+# nginx 的 5 个 temp 路径沿用编译默认值（相对 prefix），APISIX 模板未显式改写，
+# 因此按 prefix=/usr/local/apisix 预建并授权，避免运行期去写 /usr/local/apisix 根目录。
+RUN set -x \
+    && install -d -o 10001 -g 10001 -m 0755 /usr/local/apisix/logs \
+    && install -d -o 10001 -g 10001 -m 0750 \
+         /usr/local/apisix/client_body_temp /usr/local/apisix/proxy_temp \
+         /usr/local/apisix/fastcgi_temp /usr/local/apisix/uwsgi_temp \
+         /usr/local/apisix/scgi_temp \
+    && chown -R 10001:10001 /usr/local/apisix/conf /usr/local/apisix/logs
+
+USER 10001:10001
+
+RUN set -x \
+    && /usr/bin/apisix init \
+    && test -f /usr/local/apisix/conf/nginx.conf \
+    && test -w /usr/local/apisix/conf \
+    && test -w /usr/local/apisix/logs \
+    && /usr/local/openresty/bin/openresty -V 2>&1 | sed -n '1,5p' \
     && /usr/bin/apisix version \
-    && apisix help 2>&1 | head -n 20
+    && apisix help 2>&1 | sed -n '1,20p'
 
 EXPOSE 9080 9443
 

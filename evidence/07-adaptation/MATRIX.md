@@ -7,3 +7,6 @@
 | Rocky / 其他 EL8 兼容发行版 | 历史，不承诺 | 不承诺 |
 
 v1 强制组合仅 `Anolis 8.10 × x86_64`；未在矩阵内的组合不做任何承诺。
+
+交付镜像的基础层为自建加固基线 `ghcr.io/scott-wong/anolis-secure:latest`（同为
+Anolis 8.10 × x86_64），并以非 root 用户 `10001:10001` 运行；挂载卷需保证该 uid 可写。

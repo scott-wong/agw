@@ -16,9 +16,6 @@ permissions:
   contents: write
   packages: read
 
-env:
-  ANOLIS: registry.openanolis.cn/openanolis/anolisos:8.10
-
 jobs:
   baseline:
     name: Baseline drift check (make fetch)

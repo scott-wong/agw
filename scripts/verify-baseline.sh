@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # verify-baseline.sh — 基线漂移校验：7 个模块 tag commit + Tongsuo TLS 基线
-# + OpenResty tarball SHA256 + APISIX tag commit。基线事实源：scripts/baseline.env。
+# + OpenResty tarball SHA256 + APISIX tag commit + 交付镜像基础层 digest。
+# 基线事实源：scripts/baseline.env。
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
@@ -54,5 +55,32 @@ if [ ! -f "$TARBALL" ]; then
   curl -fL --retry 3 -o "$TARBALL" "https://openresty.org/download/openresty-${OPENRESTY_VERSION}.tar.gz"
 fi
 echo "${OPENRESTY_SHA256}  $TARBALL" | sha256sum -c - || fail "OpenResty tarball SHA256 mismatch"
+
+# 交付镜像基础层：ghcr.io/scott-wong/anolis-secure:<tag>。
+# 该镜像由本账号自建、每周一重建，`latest` 会前进；因此登记 tag 当前指向的 manifest
+# index digest 并在此强校验——漂移即红，必须先重扫供应链门禁（Grype/Trivy + .grype.yaml
+# 例外复核），再更新 baseline.env 的 BASE_IMAGE_DIGEST 并重新走一遍 build.yml。
+check_base_image() {
+  local repo="${BASE_IMAGE#ghcr.io/}" ref="$BASE_IMAGE_TAG" want="$BASE_IMAGE_DIGEST"
+  local token body got
+  token=$(curl -sSf "https://ghcr.io/token?scope=repository:${repo}:pull&service=ghcr.io" \
+          | sed -E 's/.*"token":"([^"]+)".*/\1/') \
+    || fail "取得 GHCR 匿名 token 失败（${BASE_IMAGE}）"
+  [ -n "$token" ] || fail "GHCR 返回空 token（${BASE_IMAGE}）"
+  body=$(mktemp)
+  curl -sSf -o "$body" \
+    -H "Authorization: Bearer $token" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json' \
+    "https://ghcr.io/v2/${repo}/manifests/${ref}" \
+    || { rm -f "$body"; fail "拉取 ${BASE_IMAGE}:${ref} manifest 失败"; }
+  got="sha256:$(sha256sum "$body" | awk '{print $1}')"
+  rm -f "$body"
+  if [ "$got" != "$want" ]; then
+    fail "${BASE_IMAGE}:${ref} digest 漂移：登记 $want，当前 $got（上游每周重建；需重扫供应链门禁后更新 baseline.env）"
+  fi
+  echo "[baseline] ${BASE_IMAGE}:${ref} @ $want OK（运行用户 ${BASE_IMAGE_USER}）"
+}
+
+check_base_image
 
 echo "[baseline] 全部基线校验通过"

@@ -12,6 +12,12 @@ SOURCE_REPOSITORY="${SOURCE_REPOSITORY:-https://github.com/scott-wong/agw}"
 WORKFLOW_RUN_URL="${WORKFLOW_RUN_URL:-}"
 OUT="${OUT:-release-manifest.json}"
 
+# 交付镜像基础层：引用与 digest 取自基线事实源（build.yml 的 make fetch 已强校验）。
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/baseline.env"
+BASE_IMAGE_REF="${BASE_IMAGE}:${BASE_IMAGE_TAG}"
+
 test -f "$RPM_FILE"
 case "$(basename "$RPM_FILE")" in
   agw-*.rpm) ;;
@@ -35,7 +41,8 @@ CREATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 python3 - "$OUT" "$RELEASE_VERSION" "$UPSTREAM_VERSION" "$SOURCE_REPOSITORY" \
   "$SOURCE_COMMIT" "$WORKFLOW_RUN_URL" "$RPM_FILE" "$RPM_SHA256" \
-  "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" "$CREATED_AT" <<'PY'
+  "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" "$CREATED_AT" \
+  "$BASE_IMAGE_REF" "$BASE_IMAGE_DIGEST" <<'PY'
 import json
 import os
 import sys
@@ -52,6 +59,8 @@ import sys
     image_repository,
     image_digest,
     created_at,
+    base_image_ref,
+    base_image_digest,
 ) = sys.argv[1:]
 
 manifest = {
@@ -77,6 +86,12 @@ manifest = {
             "tags": [release_version, upstream_version, "latest"],
             "platform": "linux/amd64",
             "baseOs": "Anolis 8.10",
+            # 基础层：自建加固基线，digest 由 build.yml 的 make fetch 强校验后登记于此。
+            "baseImage": {
+                "reference": base_image_ref,
+                "digest": base_image_digest,
+            },
+            "runtimeUser": "10001:10001",
         },
     },
 }

@@ -9,7 +9,7 @@ packaging/rpm/Dockerfile.runtime          UBI9 内编译 Tongsuo + OpenResty 1.3
 packaging/rpm/Dockerfile.package-runtime  fpm 打包 runtime RPM（兼容/调试目标，不进交付物）
 packaging/rpm/Dockerfile.apisix           runtime 树之上构建 APISIX（tag checkout，含 Server 头改写 + gm 插件）
 packaging/rpm/Dockerfile.package-apisix   fpm 打包 agw RPM（Release=agw.N）
-packaging/docker/Dockerfile               Anolis 8.10 底座 + dnf localinstall rpms/*.rpm
+packaging/docker/Dockerfile               自建加固 Anolis 8.10 底座 + dnf localinstall rpms/*.rpm（运行用户 10001:10001）
 ```
 
 `make build-rpm` 仍以独立的 runtime 镜像作为输入，但只把
@@ -51,6 +51,9 @@ Makefile 不允许追加 configure 参数），只让这一个遗留摘要算法
 ## 与上游构建工具的差异
 
 - 中间镜像命名空间 `agw-build/*`；交付镜像本地 tag `agw:<版本>`
+- 交付镜像基础层为自建加固基线 `ghcr.io/scott-wong/anolis-secure:latest`（digest 由
+  `make fetch` 校验），构建阶段显式 `USER root` 装包、末尾切回 `USER 10001:10001`，
+  并显式授权 `conf/`、`logs/` 与 nginx 的 5 个 temp 路径
 - 交付镜像推送到 GHCR `ghcr.io/scott-wong/agw`（tag 触发，见 `.github/workflows/publish.yml`）
 - fpm `-n agw`（主 RPM 名 `<产品>-<上游版本>-agw.N`），`--iteration agw.N`
 - 基线（模块 tag/commit、OpenResty tarball SHA256、Tongsuo commit）一律取自
@@ -79,5 +82,5 @@ runtime 镜像内 `/tmp/openresty-commit` = `release-<版本>`（master 模式�
 
 ## 版本与不可变性
 
-`VERSION` 是唯一事实源（`3.18.0-agw.1` = `<上游版本>-agw.<发行号>`）。
+`VERSION` 是唯一事实源（`3.18.0-agw.2` = `<上游版本>-agw.<发行号>`）。
 Git tag `v<版本>` 与 GHCR `<版本>` 标签一经发布不可移动；重新发布一律 bump `VERSION`。
