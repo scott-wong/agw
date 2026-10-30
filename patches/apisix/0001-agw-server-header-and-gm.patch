@@ -1,0 +1,112 @@
+diff --git a/apisix/cli/config.lua b/apisix/cli/config.lua
+index ab034ee..79045f8 100644
+--- a/apisix/cli/config.lua
++++ b/apisix/cli/config.lua
+@@ -27,6 +27,7 @@ local _M = {
+     enable_ipv6 = true,
+     enable_http2 = true,
+     enable_server_tokens = true,
++    server_header = "agw",
+     extra_lua_path = "",
+     extra_lua_cpath = "",
+     proxy_cache = {
+@@ -201,6 +202,7 @@ local _M = {
+   },
+   plugins = {
+     "real-ip",
++    "gm",
+     "ai",
+     "client-control",
+     "proxy-buffering",
+diff --git a/apisix/cli/schema.lua b/apisix/cli/schema.lua
+index e52453e..50f15bf 100644
+--- a/apisix/cli/schema.lua
++++ b/apisix/cli/schema.lua
+@@ -225,6 +225,18 @@ local config_schema = {
+                     type = "boolean",
+                     default = true
+                 },
++                server_header = {
++                    anyOf = {
++                        {type = "boolean", enum = {false}},
++                        {
++                            type = "string",
++                            minLength = 1,
++                            maxLength = 64,
++                            pattern = [[\A[^\x00-\x20\x7f](?:[^\x00-\x1f\x7f]*[^\x00-\x20\x7f])?\z]],
++                        },
++                    },
++                    description = "AGW Server response header; false suppresses it",
++                },
+                 ssl = {
+                     type = "object",
+                     properties = {
+diff --git a/apisix/init.lua b/apisix/init.lua
+index b25069c..21b732f 100644
+--- a/apisix/init.lua
++++ b/apisix/init.lua
+@@ -87,7 +87,17 @@ end
+ 
+ local load_balancer
+ local local_conf
+-local ver_header = "APISIX/" .. core.version.VERSION
++local ver_header = "agw"
++
++local function set_server_header()
++    if ver_header then
++        core.response.set_header("Server", ver_header)
++    else
++        -- Also clears the built-in Nginx/openresty header generated for this
++        -- response; assigning nil removes the outgoing response header.
++        ngx.header["Server"] = nil
++    end
++end
+ 
+ local has_mod, apisix_ngx_client = pcall(require, "resty.apisix.client")
+ 
+@@ -172,8 +182,13 @@ function _M.http_init_worker()
+     control_api_router.init_worker()
+     local_conf = core.config.local_conf()
+ 
+-    if local_conf.apisix and local_conf.apisix.enable_server_tokens == false then
+-        ver_header = "APISIX"
++    if local_conf.apisix then
++        local server_header = local_conf.apisix.server_header
++        if server_header == false then
++            ver_header = nil
++        elseif type(server_header) == "string" then
++            ver_header = server_header
++        end
+     end
+ 
+     -- To ensure that all workers related to Prometheus metrics are initialized,
+@@ -1354,7 +1369,7 @@ end
+ function _M.http_header_filter_phase()
+     local ngx_ctx = ngx.ctx
+     local span = tracer.start(ngx_ctx, "apisix.phase.header_filter", tracer.kind.server)
+-    core.response.set_header("Server", ver_header)
++    set_server_header()
+ 
+     local up_status = get_var("upstream_status")
+     if up_status then
+@@ -1630,7 +1645,7 @@ function _M.http_admin()
+         router = admin_init.get()
+     end
+ 
+-    core.response.set_header("Server", ver_header)
++    set_server_header()
+     -- add cors rsp header
+     cors_admin()
+ 
+diff --git a/conf/config.yaml.example b/conf/config.yaml.example
+index 6a1361a..ffa53fb 100644
+--- a/conf/config.yaml.example
++++ b/conf/config.yaml.example
+@@ -47,6 +47,7 @@ apisix:
+   #                                    # stream_proxy.tcp entry.
+ 
+   enable_server_tokens: true           # If true, show APISIX version in the `Server` response header.
++  server_header: agw                   # AGW: use an exact value, or false to suppress the header.
+   extra_lua_path: ""                   # Extend lua_package_path to load third-party code.
+   extra_lua_cpath: ""                  # Extend lua_package_cpath to load third-party code.
+   # lua_module_hook: "my_project.my_hook"  # Hook module used to inject third-party code into APISIX.

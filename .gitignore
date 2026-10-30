@@ -1,5 +1,5 @@
 .idea/
-apisix/
+/apisix/
 apisix-runtime/
 build/
 distfiles/
