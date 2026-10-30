@@ -82,6 +82,10 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 `build-openeuler.yml` 与 `build-ubuntu.yml` 是两个独立工作流，各自包含基线检查和
 镜像门禁，不互相等待：
 
+- openEuler 构建优先使用德国 XTOM 镜像、瑞典 ACCUM 镜像回退，RPM 仍由基础镜像
+  内置的 openEuler GPG key 校验；`debuginfo`、`source` 与 `update-source` 仓库关闭；
+- openEuler GHA BuildKit 缓存使用 `mode=max`，同时保存 builder 阶段，避免脚本或
+  补丁未变化时重复编译 Tongsuo 与 OpenResty；
 - `smoke-docker.sh`：运行时、默认/自定义/关闭 `Server` 头、无重复头、非法值拒绝、
   standalone 模式、SM2 双证书 NTLS 握手；
 - `smoke-etcd.sh`：外置 etcd、Admin API、数据面；

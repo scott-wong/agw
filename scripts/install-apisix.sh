@@ -15,7 +15,6 @@ WORK="${WORK:-/tmp/agw-apisix-build}"
 PATCH="$SCRIPT_DIR/../patches/apisix/0001-agw-server-header-and-gm.patch"
 
 export PATH="/usr/local/bin:$OR_PREFIX/tongsuo/bin:$OR_PREFIX/pcre/bin:$OR_PREFIX/bin:$OR_PREFIX/luajit/bin:$PATH"
-export LD_LIBRARY_PATH="$OR_PREFIX/tongsuo/lib:$OR_PREFIX/pcre/lib:$OR_PREFIX/zlib/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export LUA_PATH="$APISIX_PREFIX/?.lua;$APISIX_PREFIX/?/init.lua;$APISIX_PREFIX/deps/share/lua/5.1/?.lua;$APISIX_PREFIX/deps/share/lua/5.1/?/init.lua;;"
 export LUA_CPATH="$APISIX_PREFIX/deps/lib/lua/5.1/?.so;$APISIX_PREFIX/deps/lib64/lua/5.1/?.so;;"
 export OPENSSL_DIR="$OR_PREFIX/tongsuo"
@@ -91,5 +90,7 @@ test -f "$APISIX_PREFIX/conf/config.yaml"
 grep -q '"gm",' "$APISIX_PREFIX/apisix/cli/config.lua"
 grep -q 'server_header = "agw"' "$APISIX_PREFIX/apisix/cli/config.lua"
 
-/usr/local/bin/apisix version
+# Native rocks carry an RPATH to Tongsuo. Keep Tongsuo out of the global
+# loader path so LuaRocks can invoke the distro's git/curl without ABI clashes.
+env -u LD_LIBRARY_PATH /usr/local/bin/apisix version
 rm -rf "$WORK"
