@@ -75,13 +75,16 @@ SERVER_PID=$!
 RESP=""
 HANDSHAKE_OK=0
 for _ in $(seq 1 30); do
-  RESP="$(printf 'GET / HTTP/1.0\r\n\r\n' | timeout 15 "$OPENSSL" s_client \
+  RESP="$(printf 'GET / HTTP/1.0\r\n\r\n' | timeout 10 "$OPENSSL" s_client \
     -enable_ntls -ntls -connect "127.0.0.1:$PORT" \
     -servername localhost -CAfile ca.crt -verify_return_error \
     -sign_cert sign.crt -sign_key sign.key \
     -enc_cert enc.crt -enc_key enc.key \
     -cipher "$CIPHER" 2>&1 || true)"
-  if echo "$RESP" | grep -q 'HTTP/1.0 200 ok'; then
+  # Tongsuo's NTLS s_server negotiates the handshake but does not serve the
+  # legacy -www response. Validate the protocol and authenticated chain only.
+  if echo "$RESP" | grep -q 'NTLSv1.1' \
+      && echo "$RESP" | grep -q 'Verify return code: 0 (ok)'; then
     HANDSHAKE_OK=1
     break
   fi
