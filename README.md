@@ -162,8 +162,9 @@ make verify-etcd IMAGE=agw:3.19.0-agw.1-openeuler
 
 所有构建、测试、镜像和发布都在 GitHub 完成。
 
-- `build.yml`：基线/静态检查，两个镜像矩阵构建，镜像与外置 etcd 冒烟，
-  自研比例，CycloneDX SBOM，Trivy 阻断扫描，去字符门禁。
+- `build-openeuler.yml`：独立的 openEuler 基线、构建、回拉冒烟与供应链门禁。
+- `build-ubuntu.yml`：独立的 Ubuntu 基线、构建、回拉冒烟与供应链门禁。
+- 两个构建流互不等待；一个变体失败不会跳过或阻塞另一个变体。
 - `publish.yml`：tag `v<版本>` 触发；两个 candidate 构建、回拉、冒烟与 Trivy
   全部通过后，以精确 digest 提升最终标签，再回拉最终标签复验并创建 Release。
 

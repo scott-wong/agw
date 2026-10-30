@@ -79,7 +79,8 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 
 ## CI
 
-`build.yml` 对两个变体并行构建和验证：
+`build-openeuler.yml` 与 `build-ubuntu.yml` 是两个独立工作流，各自包含基线检查和
+镜像门禁，不互相等待：
 
 - `smoke-docker.sh`：运行时、默认/自定义/关闭 `Server` 头、无重复头、非法值拒绝、
   standalone 模式、SM2 双证书 NTLS 握手；
@@ -88,9 +89,8 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 - Trivy：唯一阻断扫描器，`HIGH,CRITICAL` + secret；
 - openEuler 的 `dnf updateinfo --security`：仅非阻断证据。
 
-`publish.yml` 先推送两个 candidate，再分别回拉冒烟和扫描。任一环节失败都不会创建
-最终标签或 GitHub Release。提升使用 `crane tag` 指向 candidate 的精确 digest，
-不是重新构建。
+`publish.yml` 仍按正式发布契约要求两个 candidate 都通过后再提升；日常构建阶段
+则拆成两个独立流水线，先把单个变体跑通，不因另一个变体失败而阻塞。
 
 ## 版本不可变性
 

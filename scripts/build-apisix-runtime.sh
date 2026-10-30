@@ -101,7 +101,9 @@ prepare_modules() {
   )
   (
     cd "$WORK/wasm-nginx-module"
-    ./install-wasmtime.sh
+    # wget/curl link the distro's libcrypto; keep the newly built Tongsuo
+    # rpath/LD_LIBRARY_PATH out of this bootstrap process.
+    env -u LD_LIBRARY_PATH ./install-wasmtime.sh
   )
 
   local limit_bundle

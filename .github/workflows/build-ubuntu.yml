@@ -1,0 +1,137 @@
+name: agw build ubuntu
+
+# Independent Ubuntu pipeline. It never waits for the openEuler build.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  checks:
+    name: Ubuntu baseline and static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: distfiles
+          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+      - run: make fetch
+      - run: make verify
+      - run: bash scripts/verify-debrand.sh
+      - run: bash scripts/gen-self-ratio.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agw-ubuntu-self-developed-ratio
+          path: evidence/09-ip/self-developed-ratio.json
+          retention-days: 30
+
+  image:
+    name: Build and gate Ubuntu image
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    needs: checks
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version
+        id: ver
+        run: echo "version=$(tr -d ' \n' < VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: actions/cache@v4
+        with:
+          path: distfiles
+          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+      - run: make fetch
+      - name: Build Ubuntu final image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packaging/docker/Dockerfile
+          target: ubuntu-final
+          load: true
+          push: false
+          tags: agw:${{ steps.ver.outputs.version }}-ubuntu-ci
+          build-args: |
+            AGW_VERSION=${{ steps.ver.outputs.version }}
+          cache-from: type=gha,scope=agw-ubuntu
+          cache-to: type=gha,mode=min,scope=agw-ubuntu
+      - name: Image and Server-header smoke
+        run: |
+          bash scripts/smoke-docker.sh \
+            "agw:${{ steps.ver.outputs.version }}-ubuntu-ci" \
+            ubuntu \
+            "${{ steps.ver.outputs.version }}"
+      - name: External etcd and Admin API smoke
+        run: |
+          bash scripts/smoke-etcd.sh \
+            "agw:${{ steps.ver.outputs.version }}-ubuntu-ci"
+      - run: bash scripts/install-security-tools.sh syft trivy
+      - name: Generate CycloneDX SBOM
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          IMAGE="agw:${{ steps.ver.outputs.version }}-ubuntu-ci"
+          syft scan "docker:${IMAGE}" -o cyclonedx-json \
+            > "artifacts/agw-${{ steps.ver.outputs.version }}-ubuntu.cyclonedx.json"
+      - name: Trivy blocking scan
+        run: |
+          set -euo pipefail
+          IMAGE="agw:${{ steps.ver.outputs.version }}-ubuntu-ci"
+          SKIP_FILES=(
+            --skip-files "/usr/local/apisix/conf/cert/ssl_PLACE_HOLDER.key"
+            --skip-files "**/apisix/conf/cert/ssl_PLACE_HOLDER.key"
+            --skip-files "/usr/local/openresty/pod/lua-resty-rsa-*.pod"
+            --skip-files "**/lua-resty-rsa-*.pod"
+          )
+          set +e
+          trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
+            --exit-code 1 --format sarif -o artifacts/trivy-ubuntu.sarif \
+            "${SKIP_FILES[@]}" "$IMAGE"
+          rc=$?
+          trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
+            --exit-code 0 --format table \
+            "${SKIP_FILES[@]}" "$IMAGE" > artifacts/trivy-ubuntu.txt 2>&1 || true
+          exit "$rc"
+      - name: Build evidence
+        if: always()
+        run: |
+          mkdir -p artifacts
+          {
+            echo "version=${{ steps.ver.outputs.version }}"
+            echo "variant=ubuntu"
+            echo "source_commit=${{ github.sha }}"
+            echo "workflow_run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            docker image inspect "agw:${{ steps.ver.outputs.version }}-ubuntu-ci" \
+              --format 'image_id={{.Id}} base_digest={{index .Config.Labels "org.opencontainers.image.base.digest"}}' \
+              || true
+          } > artifacts/build-ubuntu.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agw-ubuntu-sbom
+          path: artifacts/*.cyclonedx.json
+          retention-days: 30
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agw-ubuntu-trivy
+          path: |
+            artifacts/trivy-ubuntu.sarif
+            artifacts/trivy-ubuntu.txt
+          retention-days: 30
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agw-ubuntu-evidence
+          path: artifacts/build-ubuntu.txt
+          retention-days: 30
+          if-no-files-found: warn
