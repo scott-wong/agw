@@ -106,7 +106,7 @@ jobs:
         run: |
           IMAGE="agw:${{ steps.ver.outputs.version }}-openeuler-ci"
           docker run --rm --entrypoint bash "$IMAGE" -c \
-            'dnf updateinfo --security 2>&1 || true' \
+            'env -u LD_LIBRARY_PATH dnf updateinfo --security 2>&1 || true' \
             > artifacts/openEuler-security-evidence.txt
       - name: Build evidence
         if: always()

@@ -15,6 +15,10 @@ if command -v gcc >/dev/null 2>&1 || command -v g++ >/dev/null 2>&1 || command -
   echo "ERROR: final image contains a compiler or make" >&2
   exit 1
 fi
+test -z "${LD_LIBRARY_PATH:-}" || {
+  echo "ERROR: final image sets a global LD_LIBRARY_PATH" >&2
+  exit 1
+}
 
 echo "[runtime] OpenResty / APISIX CLI"
 test -x /usr/local/openresty/bin/openresty

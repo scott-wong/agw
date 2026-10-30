@@ -84,7 +84,6 @@ LABEL org.opencontainers.image.title="AGW" \
       io.agw.nginx-worker-user="nobody"
 
 ENV PATH=/usr/local/bin:/usr/local/openresty/bin:/usr/local/openresty/luajit/bin:$PATH \
-    LD_LIBRARY_PATH=/usr/local/openresty/tongsuo/lib:/usr/local/openresty/pcre/lib:/usr/local/openresty/zlib/lib \
     APISIX_HOME=/usr/local/apisix
 
 WORKDIR /usr/local/apisix
@@ -128,7 +127,6 @@ LABEL org.opencontainers.image.title="AGW" \
       io.agw.nginx-worker-user="nobody"
 
 ENV PATH=/usr/local/bin:/usr/local/openresty/bin:/usr/local/openresty/luajit/bin:$PATH \
-    LD_LIBRARY_PATH=/usr/local/openresty/tongsuo/lib:/usr/local/openresty/pcre/lib:/usr/local/openresty/zlib/lib \
     APISIX_HOME=/usr/local/apisix
 
 WORKDIR /usr/local/apisix

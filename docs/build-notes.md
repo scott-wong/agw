@@ -66,6 +66,8 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 ## 最终阶段
 
 `scripts/install-runtime-deps.sh` 只安装运行库，并断言不存在 gcc/make。
+运行时不设置全局 `LD_LIBRARY_PATH`；OpenResty、Tongsuo 与 APISIX 原生模块通过
+RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 OpenSSL ABI。
 `scripts/prepare-image.sh`：
 
 - 清理 OpenResty 安装产生的头文件、静态库和 pkgconfig；

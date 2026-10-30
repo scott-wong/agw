@@ -13,7 +13,6 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/baseline.env"
 
 export PATH="/usr/local/bin:/usr/local/openresty/bin:/usr/local/openresty/luajit/bin:$PATH"
-export LD_LIBRARY_PATH="/usr/local/openresty/tongsuo/lib:/usr/local/openresty/pcre/lib:/usr/local/openresty/zlib/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 case "$DISTRO" in
   openeuler)
