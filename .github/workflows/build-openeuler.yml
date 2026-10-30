@@ -61,7 +61,9 @@ jobs:
           build-args: |
             AGW_VERSION=${{ steps.ver.outputs.version }}
           cache-from: type=gha,scope=agw-openeuler
-          cache-to: type=gha,mode=min,scope=agw-openeuler
+          # mode=max exports builder stages too; otherwise every run recompiles
+          # Tongsuo and OpenResty even when their inputs have not changed.
+          cache-to: type=gha,mode=max,ignore-error=true,scope=agw-openeuler
       - name: Image and Server-header smoke
         run: |
           bash scripts/smoke-docker.sh \

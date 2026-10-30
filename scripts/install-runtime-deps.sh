@@ -4,11 +4,14 @@
 set -euo pipefail
 
 DISTRO="${1:?用法: install-runtime-deps.sh <openeuler|ubuntu>}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 case "$DISTRO" in
   openeuler)
-    dnf -y makecache
-    dnf -y --setopt=install_weak_deps=False install \
+    bash "$SCRIPT_DIR/configure-openeuler-repo.sh"
+    dnf -y --setopt=max_parallel_downloads=10 makecache
+    dnf -y --setopt=install_weak_deps=False \
+      --setopt=max_parallel_downloads=10 install \
       brotli ca-certificates findutils libgcc libstdc++ libxml2 libxslt \
       libyaml ncurses-libs openldap readline
     dnf clean all

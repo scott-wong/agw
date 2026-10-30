@@ -3,11 +3,14 @@
 set -euo pipefail
 
 DISTRO="${1:?用法: install-build-deps.sh <openeuler|ubuntu>}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 case "$DISTRO" in
   openeuler)
-    dnf -y makecache
-    dnf -y --setopt=install_weak_deps=False install \
+    bash "$SCRIPT_DIR/configure-openeuler-repo.sh"
+    dnf -y --setopt=max_parallel_downloads=10 makecache
+    dnf -y --setopt=install_weak_deps=False \
+      --setopt=max_parallel_downloads=10 install \
       autoconf automake bzip2 ca-certificates cmake curl diffutils findutils \
       gcc gcc-c++ git libtool make patch perl perl-Digest-SHA perl-IPC-Cmd \
       pkgconf readline-devel openldap-devel libxml2-devel \

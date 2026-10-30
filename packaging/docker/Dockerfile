@@ -19,7 +19,7 @@ ARG AGW_VERSION=3.19.0-agw.1
 ENV DISTRO=openeuler
 WORKDIR /opt/agw
 
-COPY scripts/install-build-deps.sh /opt/agw/scripts/
+COPY scripts/configure-openeuler-repo.sh scripts/install-build-deps.sh /opt/agw/scripts/
 RUN bash scripts/install-build-deps.sh openeuler
 
 COPY scripts/baseline.env scripts/build-apisix-runtime.sh /opt/agw/scripts/
