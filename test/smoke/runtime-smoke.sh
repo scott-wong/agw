@@ -40,7 +40,7 @@ test -x "$OPENSSL"
 echo "[runtime] APISIX default config"
 test -f "$APISIX_CLI_CONFIG"
 grep -q '^    "gm",$' "$APISIX_CLI_CONFIG"
-grep -q 'server_header = "agw"' "$APISIX_CLI_CONFIG"
+grep -q 'local ver_header = "agw"' "$APISIX_CLI_CONFIG"
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"
 bash "$SMOKE_DIR/gm-ntls-handshake.sh" "$OPENSSL"

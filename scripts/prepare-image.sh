@@ -60,7 +60,7 @@ done < <(find /usr/local/openresty /usr/local/apisix -type f \
 /usr/local/openresty/bin/openresty -t -p /usr/local/apisix -c conf/nginx.conf
 
 test -f /usr/local/apisix/conf/nginx.conf
-grep -q 'server_header = "agw"' /usr/local/apisix/apisix/cli/config.lua
+grep -q 'local ver_header = "agw"' /usr/local/apisix/apisix/cli/config.lua
 grep -q '^    "gm",$' /usr/local/apisix/apisix/cli/config.lua
 
 install -d -o 65534 -g 65534 -m 0750 /usr/local/apisix/logs

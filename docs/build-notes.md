@@ -70,7 +70,7 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 
 - 清理 OpenResty 安装产生的头文件、静态库和 pkgconfig；
 - 运行 `apisix init` 与 `openresty -t`；
-- 断言默认配置包含 `server_header: agw` 与 `gm`；
+- 断言 CLI 默认 `Server` 头为 `agw`，且默认插件表包含 `gm`；
 - 把 `logs` 与五个 `*_temp` 目录授予 `65534:65534`，对应 `nobody` worker；
 - 写入镜像来源、运行用户与 Tongsuo CVE 对标状态。
 

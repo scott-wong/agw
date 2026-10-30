@@ -31,7 +31,7 @@ tar -xzf "$DISTFILES/apisix-${APISIX_TAG}.tar.gz" --strip-components=1 -C "$WORK
 (
   cd "$WORK"
   patch -p1 --batch --forward < "$PATCH"
-  grep -q 'server_header = "agw"' apisix/cli/config.lua
+  grep -q 'local ver_header = "agw"' apisix/cli/config.lua
   grep -q '^    "gm",$' apisix/cli/config.lua
 
   # luarocks make does not need to fetch the source again; point the source
@@ -87,7 +87,7 @@ test -x /usr/local/bin/apisix
 test -f "$APISIX_PREFIX/apisix/cli/apisix.lua"
 test -f "$APISIX_PREFIX/conf/config.yaml"
 grep -q '"gm",' "$APISIX_PREFIX/apisix/cli/config.lua"
-grep -q 'server_header = "agw"' "$APISIX_PREFIX/apisix/cli/config.lua"
+grep -q 'local ver_header = "agw"' "$APISIX_PREFIX/apisix/cli/config.lua"
 
 # Native rocks carry an RPATH to Tongsuo. Keep Tongsuo out of the global
 # loader path so LuaRocks can invoke the distro's git/curl without ABI clashes.
