@@ -63,7 +63,9 @@ curl -fsS -D /tmp/agw-admin-headers.txt -o /tmp/agw-admin-body.json \
   -H 'X-API-KEY: agw-smoke-admin-key'
 tr -d '\r' < /tmp/agw-admin-headers.txt
 test "$(grep -ci '^Server:' /tmp/agw-admin-headers.txt || true)" -eq 1
-grep -i '^Server:' /tmp/agw-admin-headers.txt | grep -Fxq 'Server: agw-etcd'
+tr -d '\r' < /tmp/agw-admin-headers.txt \
+  | grep -i '^Server:' \
+  | grep -Fxq 'Server: agw-etcd'
 python3 - <<'PY'
 import json
 with open('/tmp/agw-admin-body.json', encoding='utf-8') as handle:
@@ -75,6 +77,8 @@ curl -sS -D /tmp/agw-data-headers.txt -o /dev/null \
   http://127.0.0.1:19080/no-such-route
 tr -d '\r' < /tmp/agw-data-headers.txt
 test "$(grep -ci '^Server:' /tmp/agw-data-headers.txt || true)" -eq 1
-grep -i '^Server:' /tmp/agw-data-headers.txt | grep -Fxq 'Server: agw-etcd'
+tr -d '\r' < /tmp/agw-data-headers.txt \
+  | grep -i '^Server:' \
+  | grep -Fxq 'Server: agw-etcd'
 
 echo "[etcd] external etcd + Admin API + data-plane Server header OK"
