@@ -69,7 +69,7 @@ install_tongsuo() {
       --libdir=lib \
       --with-zlib-lib="$ZLIB_PREFIX/lib" \
       --with-zlib-include="$ZLIB_PREFIX/include"
-    make -j"$(nproc)" LD_LIBRARY_PATH= CC=gcc
+    make -j"$(nproc)" build_sw LD_LIBRARY_PATH= CC=gcc
     make install_sw install_ssldirs
   )
   if [ -f "$OPENSSL_CONF_PATH" ]; then

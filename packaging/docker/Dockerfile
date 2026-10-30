@@ -19,18 +19,22 @@ ARG AGW_VERSION=3.19.0-agw.1
 ENV DISTRO=openeuler
 WORKDIR /opt/agw
 
-COPY scripts/ /opt/agw/scripts/
-COPY patches/ /opt/agw/patches/
+COPY scripts/install-build-deps.sh /opt/agw/scripts/
+RUN bash scripts/install-build-deps.sh openeuler
+
+COPY scripts/baseline.env scripts/build-apisix-runtime.sh /opt/agw/scripts/
 COPY packaging/openssl/openssl.cnf /opt/agw/packaging/openssl/openssl.cnf
 COPY distfiles/ /opt/agw/distfiles/
-
-RUN bash scripts/install-build-deps.sh openeuler \
-    && DISTFILES=/opt/agw/distfiles \
+RUN DISTFILES=/opt/agw/distfiles \
        OPENSSL_CONF_PATH=/opt/agw/packaging/openssl/openssl.cnf \
-       bash scripts/build-apisix-runtime.sh \
-    && bash scripts/install-luarocks.sh \
-    && DISTFILES=/opt/agw/distfiles \
-       bash scripts/install-apisix.sh \
+       bash scripts/build-apisix-runtime.sh
+
+COPY scripts/install-luarocks.sh /opt/agw/scripts/
+RUN bash scripts/install-luarocks.sh
+
+COPY scripts/install-apisix.sh /opt/agw/scripts/
+COPY patches/ /opt/agw/patches/
+RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
     && rm -rf /tmp/agw-runtime-build /tmp/agw-luarocks-build /tmp/agw-apisix-build
 
 # ---------------------------------------------------------------------------
@@ -42,18 +46,22 @@ ARG AGW_VERSION=3.19.0-agw.1
 ENV DISTRO=ubuntu
 WORKDIR /opt/agw
 
-COPY scripts/ /opt/agw/scripts/
-COPY patches/ /opt/agw/patches/
+COPY scripts/install-build-deps.sh /opt/agw/scripts/
+RUN bash scripts/install-build-deps.sh ubuntu
+
+COPY scripts/baseline.env scripts/build-apisix-runtime.sh /opt/agw/scripts/
 COPY packaging/openssl/openssl.cnf /opt/agw/packaging/openssl/openssl.cnf
 COPY distfiles/ /opt/agw/distfiles/
-
-RUN bash scripts/install-build-deps.sh ubuntu \
-    && DISTFILES=/opt/agw/distfiles \
+RUN DISTFILES=/opt/agw/distfiles \
        OPENSSL_CONF_PATH=/opt/agw/packaging/openssl/openssl.cnf \
-       bash scripts/build-apisix-runtime.sh \
-    && bash scripts/install-luarocks.sh \
-    && DISTFILES=/opt/agw/distfiles \
-       bash scripts/install-apisix.sh \
+       bash scripts/build-apisix-runtime.sh
+
+COPY scripts/install-luarocks.sh /opt/agw/scripts/
+RUN bash scripts/install-luarocks.sh
+
+COPY scripts/install-apisix.sh /opt/agw/scripts/
+COPY patches/ /opt/agw/patches/
+RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
     && rm -rf /tmp/agw-runtime-build /tmp/agw-luarocks-build /tmp/agw-apisix-build
 
 # ---------------------------------------------------------------------------
