@@ -6,11 +6,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT="${1:-$ROOT/evidence/09-ip/self-developed-ratio.json}"
 VERSION="$(tr -d ' \n' < "$ROOT/VERSION")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/baseline.env"
 
-# 分子：vendor patch 新增行 + modules/ 代码行。AGW v1 当前为 0。
+# 分子：AGW 对 APISIX 的 patch 新增行 + modules/ 代码行。
 NUM_PATCH=0
-if ls "$ROOT"/vendor-patches/*.patch >/dev/null 2>&1; then
-  NUM_PATCH=$(grep -h '^+' "$ROOT"/vendor-patches/*.patch | grep -v '^+++' | wc -l | tr -d ' ')
+if find "$ROOT/patches" -type f -name '*.patch' -print -quit 2>/dev/null | grep -q .; then
+  NUM_PATCH=$(find "$ROOT/patches" -type f -name '*.patch' -exec grep -h '^+' {} + \
+    | grep -v '^+++' | wc -l | tr -d ' ')
 fi
 NUM_MOD=0
 if [ -d "$ROOT/modules" ]; then
@@ -22,7 +26,7 @@ if [ -d "$ROOT/modules" ]; then
 fi
 NUM=$((NUM_PATCH + NUM_MOD))
 
-# 分母：APISIX 3.18.0 基线源码行。要求先执行 make fetch，缺失时硬失败。
+# 分母：APISIX 基线源码行。要求先执行 make fetch，缺失时硬失败。
 DENOM_PATH="$ROOT/build/src"
 if [ ! -d "$DENOM_PATH" ]; then
   echo "错误: 分母根目录缺失 build/src（先执行 make fetch）" >&2
@@ -46,7 +50,7 @@ cat > "$OUT" <<JSON
   "numerator": $NUM,
   "numerator_detail": {"vendor_patch_added_lines": $NUM_PATCH, "module_code_lines": $NUM_MOD},
   "denominator": $DENOM,
-  "denominator_detail": "APISIX 3.18.0 基线源码行数（lua/c/h）",
+  "denominator_detail": "Apache APISIX $APISIX_TAG 基线源码行数（lua/c/h）",
   "ratio": $RATIO,
   "measured_at": "$TS"
 }

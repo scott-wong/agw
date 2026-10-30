@@ -1,5 +1,8 @@
 # 交付镜像改用自建加固基础层并以非 root 运行
 
+> 状态：已被 `docs/adr/0006-two-distro-final-images.md` 取代。本文件保留为
+> 3.18 发布线的历史决策记录。
+
 交付镜像（`packaging/docker/Dockerfile`）的基础层从上游
 `registry.openanolis.cn/openanolis/anolisos:8.10` 换成自建加固基线
 `ghcr.io/scott-wong/anolis-secure:latest`（Anolis 8.10 + 全量包更新，每周一重建，

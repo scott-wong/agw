@@ -1,86 +1,98 @@
-# 构建链路说明（agw）
+# 构建链路说明
 
-## 构建链（make build-rpm）
+## 总览
+
+`packaging/docker/Dockerfile` 有四个主要 target：
 
 ```text
-packaging/fpm/Dockerfile                  fpm 打包工具镜像（构建期专用，不进交付物）
-packaging/rpm/Dockerfile.runtime          UBI9 内编译 Tongsuo + OpenResty 1.31.1.1 + 7 个模块
-                                          （scripts/build-apisix-runtime.sh）
-packaging/rpm/Dockerfile.package-runtime  fpm 打包 runtime RPM（兼容/调试目标，不进交付物）
-packaging/rpm/Dockerfile.apisix           runtime 树之上构建 APISIX（tag checkout，含 Server 头改写 + gm 插件）
-packaging/rpm/Dockerfile.package-apisix   fpm 打包 agw RPM（Release=agw.N）
-packaging/docker/Dockerfile               自建加固 Anolis 8.10 底座 + dnf localinstall rpms/*.rpm（运行用户 10001:10001）
+openeuler-builder   openEuler 24.03 LTS SP4 内编译运行时与 APISIX
+ubuntu-builder      Ubuntu 24.04 内独立编译运行时与 APISIX
+openeuler-final     干净 openEuler 基础镜像 + 对应 builder 的运行时
+ubuntu-final        干净 Ubuntu 基础镜像 + 对应 builder 的运行时
 ```
 
-`make build-rpm` 仍以独立的 runtime 镜像作为输入，但只把
-`agw-<上游版本>-agw.N.el8.x86_64.rpm` 收敛到 `out/`。`package-runtime` 目标仅为
-兼容调试流程保留，其 `apisix-runtime` RPM 不属于正式交付物；`build-rpm` 末尾用
-断言强制 `out/` 无中间 RPM。
+不存在跨发行版复制运行时目录。最终阶段不包含 gcc、g++、make、开发头文件、静态库
+或包管理器构建缓存。
 
-## TLS 基线：Tongsuo（国密）
+## 源码准备
 
-`scripts/build-apisix-runtime.sh` 的 `install_tongsuo()` 在编译 OpenResty 之前：
+`make fetch` 执行 `scripts/verify-baseline.sh`：
 
-1. `git clone --depth 1 --branch master https://github.com/Tongsuo-Project/Tongsuo.git`，
-   并断言 `HEAD == scripts/baseline.env` 里登记的 `TONGSHUO_COMMIT`（master 漂移即失败）；
-2. `./config shared enable-ntls zlib ... --libdir=lib64`（`--libdir=lib64` 是 RPM 体系要求；
-   Tongsuo 已移除的 `enable-camellia` / `enable-seed` / `enable-md2` 不再传入）；
-3. `make install_sw install_ssldirs`，并补 `lib -> lib64` 兼容链接（lua-resty-saml
-   的 xmlsec1 configure 只探测 `<prefix>/lib`），再把本仓
-   `packaging/rpm/conf/tongsuo/openssl.cnf` 覆盖到 `$OPENSSL_PREFIX/ssl/openssl.cnf`；
-4. 断言 `$OPENSSL_PREFIX/bin/openssl version` 以 `Tongsuo: Tongsuo ` 开头。
+1. 用 `git ls-remote` 校验 APISIX、OpenResty、Tongsuo、build-tools、PCRE2 和
+   7 个运行时模块的 tag commit。
+2. 下载锁定归档到 `distfiles/`，逐个校验 SHA256。
+3. 校验 openEuler、Ubuntu 与测试 etcd 镜像的 index digest。
+4. 把 APISIX 源码解压到 `build/src/`，供静态检查与自研比例统计使用。
 
-OpenResty 侧通过 `cc_opt` / `ld_opt` 指向 `$OPENSSL_PREFIX`（`lib64` + rpath）来链接
-Tongsuo，**刻意不传 `--with-openssl=`**：nginx 的该选项要求 OpenSSL *源码目录* 并用
-nginx 自己的参数重新 Configure（会丢掉 `enable-ntls`）并把 SSL 静态编进 nginx；
-上游国密构建口径（`apache/apisix` / `api7/apisix-plugin-gm` 的 gm.md）走的就是
-动态链接 + rpath 这条路。`make install` 之后 `assert_tongsuo_linkage()` 用 `ldd` 断言
-`nginx` 解析到的 `libssl.so` / `libcrypto.so` 确实来自 `$OPENSSL_PREFIX/lib64/`，
-并用 `openssl ciphers -v ECDHE-SM2-SM4-GCM-SM3` 断言套件协议是 `NTLSv1.1`。
+Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中执行未校验的
+版本发现。
 
-`apisix-nginx-module` 的 `nginx-enable_ntls.patch` 受 `TONGSUO_VERSION_NUMBER` 保护
-（该宏只由 Tongsuo 头文件提供），因此上面两条断言同时也是国密补丁生效的判据。
+## 运行时
 
-同一套基线还影响 APISIX 侧的原生依赖：`saml-auth` 插件依赖的 `lua-resty-saml 0.2.5`
-自带 `xmlsec1-1.2.28`，其默认启用的 RIPEMD160 变换引用 `EVP_ripemd160`，而 Tongsuo
-已不再导出该符号。`scripts/install-common.sh` 在 `luarocks make` 前注入
-`CPPFLAGS=-DXMLSEC_NO_RIPEMD160=1`（等价 xmlsec1 的 `--disable-ripemd160`，其 rock 的
-Makefile 不允许追加 configure 参数），只让这一个遗留摘要算法缺席，`saml-auth` 其余
-能力保留；决策与回退条件见 `docs/adr/0004-xmlsec1-no-ripemd160.md`。
+`scripts/build-apisix-runtime.sh` 在目标发行版内：
 
-## 与上游构建工具的差异
+1. 从源码编译 PCRE2 `10.49` 到 `/usr/local/openresty/pcre`。
+2. 从源码编译 zlib `1.3.2` 到 `/usr/local/openresty/zlib`。
+3. 编译 Tongsuo `8.5.0` 到 `/usr/local/openresty/tongsuo`，参数包含
+   `shared enable-ntls zlib`，并统一使用 `--libdir=lib`。
+4. 运行模块自带的 `patch.sh`；`apisix-nginx-module 1.20.3` 与
+   `ngx_multi_upstream_module 1.4.1` 原生识别 OpenResty `1.31.8.1`，不再维护旧
+   OpenResty 的本地 patch 覆盖。
+5. 按 API7 runtime `1.4.2` 口径构建 OpenResty，链接 Tongsuo、PCRE2 与 zlib，
+   并用 `ldd` 断言动态库来源。
 
-- 中间镜像命名空间 `agw-build/*`；交付镜像本地 tag `agw:<版本>`
-- 交付镜像基础层为自建加固基线 `ghcr.io/scott-wong/anolis-secure:latest`（digest 由
-  `make fetch` 校验），构建阶段显式 `USER root` 装包、末尾切回 `USER 10001:10001`，
-  并显式授权 `conf/`、`logs/` 与 nginx 的 5 个 temp 路径
-- 交付镜像推送到 GHCR `ghcr.io/scott-wong/agw`（tag 触发，见 `.github/workflows/publish.yml`）
-- fpm `-n agw`（主 RPM 名 `<产品>-<上游版本>-agw.N`），`--iteration agw.N`
-- 基线（模块 tag/commit、OpenResty tarball SHA256、Tongsuo commit）一律取自
-  `scripts/baseline.env`，`make fetch` 与运行时脚本各自强制校验
-- vendor patch 模块位于 `vendor-patches/0001-…`、`0002-…`（来源 PR 与回退条件见头注）
-- `Server: agw` 改写与断言见 `scripts/install-common.sh` + `scripts/smoke-docker.sh`
-- `gm` 插件插入 APISIX 默认插件表同样在 `scripts/install-common.sh`（断言 `"gm",`）
-- `saml-auth` 依赖的原生 xmlsec1 关闭 RIPEMD160 变换（Tongsuo 无 `EVP_ripemd160`），
-  以 `CPPFLAGS` 注入 `XMLSEC_NO_RIPEMD160`，见 `docs/adr/0004-xmlsec1-no-ripemd160.md`
+`nginx` 刻意不传 `--with-openssl=`。该选项会用 Nginx 自己的参数重新配置源码，
+破坏 Tongsuo 的 `enable-ntls` 口径；AGW 通过 include、library path 和 rpath 链接
+动态 Tongsuo。
 
-## provenance
+## APISIX
 
-runtime 镜像内 `/tmp/openresty-commit` = `release-<版本>`（master 模式为 commit SHA，判非发行）；
-`/tmp/openresty-version` = 实际 OpenResty 版本。Tongsuo 的版本/commit 由构建日志与
-`openssl version` 印记记录。两段产物一致性由同一 run 串行保证。
+`scripts/install-luarocks.sh` 用 OpenResty 的 LuaJIT 安装固定版本 LuaRocks。
+`scripts/install-apisix.sh`：
 
-## CI 与发布
+1. 解压 APISIX `3.19.0` 并应用
+   `patches/apisix/0001-agw-server-header-and-gm.patch`。
+2. 用 LuaRocks 构建依赖和 APISIX CLI。
+3. 组装 `/usr/local/apisix`、`/usr/local/bin/apisix` 与依赖树。
+4. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
+   `EVP_ripemd160` 的现实。
 
-- `.github/workflows/build.yml`：push main / PR / 手工触发，执行 fetch、最终 RPM、
-  RPM 与镜像冒烟（含国密握手）、自研比例、SBOM、Grype/Trivy 和去字符门禁。
-  供应链门禁的 SBOM 会回填 `evidence/04-sbom/`。
-- `.github/workflows/publish.yml`：tag `v*` 或手工触发，推送 GHCR 三标签镜像，
-  回拉后重跑 standalone/国密冒烟，再生成发布物 SBOM 与 `release-manifest.json`
-  并附到 GitHub Release。
-- 两个工作流都是自洽的：不引用任何外部仓库的 reusable workflow / composite action。
+补丁做三件事：
 
-## 版本与不可变性
+- 增加 `apisix.server_header` 默认值 `agw`；
+- 用 JSON Schema 拒绝空值、控制字符、首尾空白和超长值，并允许 `false`；
+- 把 `gm` 加入默认插件表。
 
-`VERSION` 是唯一事实源（`3.18.0-agw.2` = `<上游版本>-agw.<发行号>`）。
-Git tag `v<版本>` 与 GHCR `<版本>` 标签一经发布不可移动；重新发布一律 bump `VERSION`。
+## 最终阶段
+
+`scripts/install-runtime-deps.sh` 只安装运行库，并断言不存在 gcc/make。
+`scripts/prepare-image.sh`：
+
+- 清理 OpenResty 安装产生的头文件、静态库和 pkgconfig；
+- 运行 `apisix init` 与 `openresty -t`；
+- 断言默认配置包含 `server_header: agw` 与 `gm`；
+- 把 `logs` 与五个 `*_temp` 目录授予 `65534:65534`，对应 `nobody` worker；
+- 写入镜像来源、运行用户与 Tongsuo CVE 对标状态。
+
+最终镜像不设置 `USER`，继承基础镜像默认用户。当前 openEuler 与 Ubuntu 基础镜像
+默认均为 root。
+
+## CI
+
+`build.yml` 对两个变体并行构建和验证：
+
+- `smoke-docker.sh`：运行时、默认/自定义/关闭 `Server` 头、无重复头、非法值拒绝、
+  standalone 模式、SM2 双证书 NTLS 握手；
+- `smoke-etcd.sh`：外置 etcd、Admin API、数据面；
+- Syft：两个变体各自生成 CycloneDX SBOM；
+- Trivy：唯一阻断扫描器，`HIGH,CRITICAL` + secret；
+- openEuler 的 `dnf updateinfo --security`：仅非阻断证据。
+
+`publish.yml` 先推送两个 candidate，再分别回拉冒烟和扫描。任一环节失败都不会创建
+最终标签或 GitHub Release。提升使用 `crane tag` 指向 candidate 的精确 digest，
+不是重新构建。
+
+## 版本不可变性
+
+`VERSION` 是唯一事实源，当前为 `3.19.0-agw.1`。Git tag 必须是
+`v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。

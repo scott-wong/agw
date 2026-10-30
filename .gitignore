@@ -3,9 +3,7 @@ apisix/
 apisix-runtime/
 build/
 distfiles/
-out/
 output/
-rpms/
 .DS_Store
 output-runtime/
 output-apisix/

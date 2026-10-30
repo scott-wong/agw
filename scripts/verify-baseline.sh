@@ -1,86 +1,138 @@
 #!/usr/bin/env bash
-# verify-baseline.sh — 基线漂移校验：7 个模块 tag commit + Tongsuo TLS 基线
-# + OpenResty tarball SHA256 + APISIX tag commit + 交付镜像基础层 digest。
-# 基线事实源：scripts/baseline.env。
+# Verify every immutable upstream pin, then stage source archives under
+# distfiles/ for the Docker build. Drift fails the build before compilation.
 set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/baseline.env"
 
-fail() { echo "错误: 基线漂移 — $*" >&2; exit 1; }
+DISTFILES="${DISTFILES:-$ROOT/distfiles}"
+mkdir -p "$DISTFILES"
 
-check_ref() {
-  local repo="$1" ref="$2" want="$3" got
-  got=$(git ls-remote "https://github.com/$repo.git" "$ref" | awk '{print $1}')
+fail() {
+  echo "错误: 基线漂移 - $*" >&2
+  exit 1
+}
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+check_tag_commit() {
+  local repo="$1" tag="$2" want="$3" got
+  got="$(git ls-remote "https://github.com/${repo}.git" "refs/tags/${tag}^{}" | awk 'NR==1 {print $1}')"
   if [ -z "$got" ]; then
-    fail "$repo $ref 不存在（上游删除/改名）"
+    got="$(git ls-remote "https://github.com/${repo}.git" "refs/tags/${tag}" | awk 'NR==1 {print $1}')"
   fi
-  if [ "$got" != "$want" ]; then
-    fail "$repo $ref commit 漂移：登记 $want，远端 $got"
-  fi
-  echo "[baseline] $repo $ref @ $want OK"
+  [ -n "$got" ] || fail "${repo} ${tag} 不存在"
+  [ "$got" = "$want" ] || fail "${repo} ${tag} commit: 期望 ${want}，实际 ${got}"
+  echo "[baseline] ${repo} ${tag} @ ${want} OK"
 }
 
-check_tag() {
-  local repo="$1" tag="$2" want="$3"
-  check_ref "$repo" "refs/tags/$tag" "$want"
-}
-
-# APISIX 网关基线
-check_tag apache/apisix "$APISIX_TAG" "$APISIX_COMMIT"
-
-# 运行时模块基线（7 个模块；其中 apisix-nginx-module 含 stream/meta 两个子编译单元）
-check_tag api7/ngx_multi_upstream_module "$NGX_MULTI_UPSTREAM_MODULE_VERSION" "$NGX_MULTI_UPSTREAM_MODULE_COMMIT"
-check_tag api7/apisix-nginx-module "$APISIX_NGINX_MODULE_VERSION" "$APISIX_NGINX_MODULE_COMMIT"
-check_tag api7/wasm-nginx-module "$WASM_NGINX_MODULE_VERSION" "$WASM_NGINX_MODULE_COMMIT"
-check_tag api7/lua-var-nginx-module "$LUA_VAR_NGINX_MODULE_VERSION" "$LUA_VAR_NGINX_MODULE_COMMIT"
-check_tag api7/mod_dubbo "$MOD_DUBBO_VERSION" "$MOD_DUBBO_COMMIT"
-check_tag Kong/lua-resty-events "$LUA_RESTY_EVENTS_VERSION" "$LUA_RESTY_EVENTS_COMMIT"
-check_tag api7/ngx_http_ffi_client "$NGX_HTTP_FFI_CLIENT_VERSION" "$NGX_HTTP_FFI_CLIENT_COMMIT"
-
-# TLS 基线：Tongsuo（铜锁）。上游是滚动 master 分支，因此以 commit 固定，
-# 并要求 master HEAD 与登记 commit 严格一致——master 前进即红，必须先复核
-# （跑 scripts/build-apisix-runtime.sh 的国密握手门禁 + 更新 README 基线表）
-# 再 bump baseline.env 的 TONGSHUO_COMMIT / TONGSHUO_TAG。
-# `api7/tongsuo` 已不可用，基线改用官方 Tongsuo-Project/Tongsuo。
-check_ref Tongsuo-Project/Tongsuo refs/heads/master "$TONGSHUO_COMMIT"
-# 同一 commit 同时是上游 tag：用于人工追溯"当时 master 对应哪个发布点"。
-check_tag Tongsuo-Project/Tongsuo "$TONGSHUO_TAG" "$TONGSHUO_COMMIT"
-
-# OpenResty release tarball（distfiles 缓存优先）
-mkdir -p distfiles
-TARBALL="distfiles/openresty-${OPENRESTY_VERSION}.tar.gz"
-if [ ! -f "$TARBALL" ]; then
-  echo "[baseline] 下载 openresty-${OPENRESTY_VERSION}.tar.gz"
-  curl -fL --retry 3 -o "$TARBALL" "https://openresty.org/download/openresty-${OPENRESTY_VERSION}.tar.gz"
-fi
-echo "${OPENRESTY_SHA256}  $TARBALL" | sha256sum -c - || fail "OpenResty tarball SHA256 mismatch"
-
-# 交付镜像基础层：ghcr.io/scott-wong/anolis-secure:<tag>。
-# 该镜像由本账号自建、每周一重建，`latest` 会前进；因此登记 tag 当前指向的 manifest
-# index digest 并在此强校验——漂移即红，必须先重扫供应链门禁（Grype/Trivy + .grype.yaml
-# 例外复核），再更新 baseline.env 的 BASE_IMAGE_DIGEST 并重新走一遍 build.yml。
-check_base_image() {
-  local repo="${BASE_IMAGE#ghcr.io/}" ref="$BASE_IMAGE_TAG" want="$BASE_IMAGE_DIGEST"
-  local token body got
-  token=$(curl -sSf "https://ghcr.io/token?scope=repository:${repo}:pull&service=ghcr.io" \
-          | sed -E 's/.*"token":"([^"]+)".*/\1/') \
-    || fail "取得 GHCR 匿名 token 失败（${BASE_IMAGE}）"
-  [ -n "$token" ] || fail "GHCR 返回空 token（${BASE_IMAGE}）"
-  body=$(mktemp)
-  curl -sSf -o "$body" \
-    -H "Authorization: Bearer $token" \
-    -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json' \
-    "https://ghcr.io/v2/${repo}/manifests/${ref}" \
-    || { rm -f "$body"; fail "拉取 ${BASE_IMAGE}:${ref} manifest 失败"; }
-  got="sha256:$(sha256sum "$body" | awk '{print $1}')"
-  rm -f "$body"
-  if [ "$got" != "$want" ]; then
-    fail "${BASE_IMAGE}:${ref} digest 漂移：登记 $want，当前 $got（上游每周重建；需重扫供应链门禁后更新 baseline.env）"
+download_verify() {
+  local url="$1" output="$2" want="$3" got
+  if [ ! -f "$output" ]; then
+    echo "[baseline] 下载 $(basename "$output")"
+    curl -fL --retry 3 --retry-delay 2 -o "$output.tmp" "$url"
+    mv "$output.tmp" "$output"
   fi
-  echo "[baseline] ${BASE_IMAGE}:${ref} @ $want OK（运行用户 ${BASE_IMAGE_USER}）"
+  got="$(sha256_of "$output")"
+  [ "$got" = "$want" ] || fail "$(basename "$output") SHA256: 期望 ${want}，实际 ${got}"
+  echo "[baseline] $(basename "$output") SHA256 OK"
 }
 
-check_base_image
+verify_github_archive() {
+  local repo="$1" tag="$2" sha="$3" output="$4"
+  download_verify "https://github.com/${repo}/archive/refs/tags/${tag}.tar.gz" "$output" "$sha"
+}
 
-echo "[baseline] 全部基线校验通过"
+manifest_digest() {
+  local url="$1" auth="${2:-}" tmp
+  tmp="$(mktemp)"
+  if [ -n "$auth" ]; then
+    curl -fsSL -H "Authorization: Bearer ${auth}" \
+      -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json' \
+      -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
+  else
+    curl -fsSL \
+      -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json' \
+      -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
+  fi
+  printf 'sha256:%s\n' "$(sha256_of "$tmp")"
+  rm -f "$tmp"
+}
+
+check_quay_index() {
+  local repo="$1" tag="$2" want="$3" got
+  repo="${repo#quay.io/}"
+  got="$(manifest_digest "https://quay.io/v2/${repo}/manifests/${tag}")" \
+    || fail "读取 quay.io/${repo}:${tag} 失败"
+  [ "$got" = "$want" ] || fail "quay.io/${repo}:${tag} digest: 期望 ${want}，实际 ${got}"
+  echo "[baseline] quay.io/${repo}:${tag} @ ${want} OK"
+}
+
+check_dockerhub_index() {
+  local repo="$1" tag="$2" want="$3" token got
+  token="$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull" \
+    | sed -E 's/.*"token":"([^"]+)".*/\1/')" || fail "取得 Docker Hub token 失败"
+  [ -n "$token" ] || fail "Docker Hub 返回空 token"
+  got="$(manifest_digest "https://registry-1.docker.io/v2/${repo}/manifests/${tag}" "$token")" \
+    || fail "读取 docker.io/${repo}:${tag} 失败"
+  [ "$got" = "$want" ] || fail "docker.io/${repo}:${tag} digest: 期望 ${want}，实际 ${got}"
+  echo "[baseline] docker.io/${repo}:${tag} @ ${want} OK"
+}
+
+check_tag_commit apache/apisix "$APISIX_TAG" "$APISIX_COMMIT"
+check_tag_commit api7/apisix-build-tools "$BUILD_TOOLS_TAG" "$BUILD_TOOLS_COMMIT"
+check_tag_commit openresty/openresty "$OPENRESTY_TAG" "$OPENRESTY_COMMIT"
+check_tag_commit "$TONGSHUO_REPO" "$TONGSHUO_TAG" "$TONGSHUO_COMMIT"
+check_tag_commit PCRE2Project/pcre2 "$PCRE2_TAG" "$PCRE2_COMMIT"
+
+check_tag_commit "$NGX_MULTI_UPSTREAM_MODULE_REPO" "$NGX_MULTI_UPSTREAM_MODULE_TAG" "$NGX_MULTI_UPSTREAM_MODULE_COMMIT"
+check_tag_commit "$APISIX_NGINX_MODULE_REPO" "$APISIX_NGINX_MODULE_TAG" "$APISIX_NGINX_MODULE_COMMIT"
+check_tag_commit "$WASM_NGINX_MODULE_REPO" "$WASM_NGINX_MODULE_TAG" "$WASM_NGINX_MODULE_COMMIT"
+check_tag_commit "$LUA_VAR_NGINX_MODULE_REPO" "$LUA_VAR_NGINX_MODULE_TAG" "$LUA_VAR_NGINX_MODULE_COMMIT"
+check_tag_commit "$MOD_DUBBO_REPO" "$MOD_DUBBO_TAG" "$MOD_DUBBO_COMMIT"
+check_tag_commit "$LUA_RESTY_EVENTS_REPO" "$LUA_RESTY_EVENTS_TAG" "$LUA_RESTY_EVENTS_COMMIT"
+check_tag_commit "$NGX_HTTP_FFI_CLIENT_REPO" "$NGX_HTTP_FFI_CLIENT_TAG" "$NGX_HTTP_FFI_CLIENT_COMMIT"
+
+download_verify "$APISIX_SOURCE_URL" "$DISTFILES/apisix-${APISIX_TAG}.tar.gz" "$APISIX_SHA256"
+download_verify "$OPENRESTY_SOURCE_URL" "$DISTFILES/openresty-${OPENRESTY_VERSION}.tar.gz" "$OPENRESTY_SHA256"
+download_verify "$TONGSHUO_SOURCE_URL" "$DISTFILES/tongsuo-${TONGSHUO_VERSION}.tar.gz" "$TONGSHUO_SHA256"
+download_verify "$PCRE2_SOURCE_URL" "$DISTFILES/pcre2-${PCRE2_VERSION}.tar.gz" "$PCRE2_SHA256"
+download_verify "$ZLIB_SOURCE_URL" "$DISTFILES/zlib-${ZLIB_VERSION}.tar.gz" "$ZLIB_SHA256"
+download_verify "$LUAROCKS_SOURCE_URL" "$DISTFILES/luarocks-${LUAROCKS_VERSION}.tar.gz" "$LUAROCKS_SHA256"
+
+verify_github_archive "$NGX_MULTI_UPSTREAM_MODULE_REPO" "$NGX_MULTI_UPSTREAM_MODULE_TAG" \
+  "$NGX_MULTI_UPSTREAM_MODULE_SHA256" "$DISTFILES/ngx_multi_upstream_module-${NGX_MULTI_UPSTREAM_MODULE_TAG}.tar.gz"
+verify_github_archive "$APISIX_NGINX_MODULE_REPO" "$APISIX_NGINX_MODULE_TAG" \
+  "$APISIX_NGINX_MODULE_SHA256" "$DISTFILES/apisix-nginx-module-${APISIX_NGINX_MODULE_TAG}.tar.gz"
+verify_github_archive "$WASM_NGINX_MODULE_REPO" "$WASM_NGINX_MODULE_TAG" \
+  "$WASM_NGINX_MODULE_SHA256" "$DISTFILES/wasm-nginx-module-${WASM_NGINX_MODULE_TAG}.tar.gz"
+verify_github_archive "$LUA_VAR_NGINX_MODULE_REPO" "$LUA_VAR_NGINX_MODULE_TAG" \
+  "$LUA_VAR_NGINX_MODULE_SHA256" "$DISTFILES/lua-var-nginx-module-${LUA_VAR_NGINX_MODULE_TAG}.tar.gz"
+verify_github_archive "$MOD_DUBBO_REPO" "$MOD_DUBBO_TAG" \
+  "$MOD_DUBBO_SHA256" "$DISTFILES/mod_dubbo-${MOD_DUBBO_TAG}.tar.gz"
+verify_github_archive "$LUA_RESTY_EVENTS_REPO" "$LUA_RESTY_EVENTS_TAG" \
+  "$LUA_RESTY_EVENTS_SHA256" "$DISTFILES/lua-resty-events-${LUA_RESTY_EVENTS_TAG}.tar.gz"
+verify_github_archive "$NGX_HTTP_FFI_CLIENT_REPO" "$NGX_HTTP_FFI_CLIENT_TAG" \
+  "$NGX_HTTP_FFI_CLIENT_SHA256" "$DISTFILES/ngx_http_ffi_client-${NGX_HTTP_FFI_CLIENT_TAG}.tar.gz"
+verify_github_archive "$LUA_RESTY_LIMIT_TRAFFIC_REPO" "$LUA_RESTY_LIMIT_TRAFFIC_TAG" \
+  "$LUA_RESTY_LIMIT_TRAFFIC_SHA256" "$DISTFILES/lua-resty-limit-traffic-${LUA_RESTY_LIMIT_TRAFFIC_TAG}.tar.gz"
+
+check_quay_index "$OPENEULER_BASE_IMAGE" "$OPENEULER_BASE_TAG" "$OPENEULER_BASE_INDEX_DIGEST"
+check_dockerhub_index library/ubuntu "$UBUNTU_BASE_TAG" "$UBUNTU_BASE_INDEX_DIGEST"
+check_quay_index coreos/etcd v3.5.21 "$ETCD_TEST_IMAGE_DIGEST"
+
+rm -rf "$ROOT/build/apisix-${APISIX_TAG}" "$ROOT/build/src"
+mkdir -p "$ROOT/build"
+tar -xzf "$DISTFILES/apisix-${APISIX_TAG}.tar.gz" -C "$ROOT/build"
+mv "$ROOT/build/apisix-${APISIX_TAG}" "$ROOT/build/src"
+
+echo "[baseline] all pins verified; APISIX snapshot: build/src"
