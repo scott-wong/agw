@@ -171,9 +171,9 @@ build_openresty() {
   )
 
   install -d "$OR_PREFIX/lualib/resty/events"
-  install -m 0644 "$WORK"/lua-resty-events/lib/resty/events/*.lua "$OR_PREFIX/lualib/resty/events/"
+  install -m 0644 "$WORK"/lua-resty-events/lualib/resty/events/*.lua "$OR_PREFIX/lualib/resty/events/"
   install -d "$OR_PREFIX/lualib/resty/events/compat"
-  install -m 0644 "$WORK"/lua-resty-events/lib/resty/events/compat/*.lua "$OR_PREFIX/lualib/resty/events/compat/"
+  install -m 0644 "$WORK"/lua-resty-events/lualib/resty/events/compat/*.lua "$OR_PREFIX/lualib/resty/events/compat/"
   install -d "$OR_PREFIX/lualib/resty"
   install -m 0644 "$WORK/ngx_http_ffi_client/lib/resty/ngx_http_ffi_client.lua" \
     "$OR_PREFIX/lualib/resty/ngx_http_ffi_client.lua"
