@@ -5,6 +5,7 @@ set -euo pipefail
 SMOKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENSSL=/usr/local/openresty/tongsuo/bin/openssl
 APISIX_CLI_CONFIG=/usr/local/apisix/apisix/cli/config.lua
+APISIX_CLI_INIT=/usr/local/apisix/apisix/init.lua
 
 echo "[runtime] base OS"
 cat /etc/os-release
@@ -39,8 +40,9 @@ test -x "$OPENSSL"
 
 echo "[runtime] APISIX default config"
 test -f "$APISIX_CLI_CONFIG"
+test -f "$APISIX_CLI_INIT"
 grep -q '^    "gm",$' "$APISIX_CLI_CONFIG"
-grep -q 'local ver_header = "agw"' "$APISIX_CLI_CONFIG"
+grep -q 'local ver_header = "agw"' "$APISIX_CLI_INIT"
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"
 bash "$SMOKE_DIR/gm-ntls-handshake.sh" "$OPENSSL"
