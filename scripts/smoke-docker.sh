@@ -57,7 +57,8 @@ run_header_case_with_env() {
       count=$(grep -ci "^Server:" /tmp/server-headers.txt || true)
       test "$count" -eq "$EXPECTED_COUNT"
       if [ "$EXPECTED_COUNT" -eq 1 ]; then
-        awk "tolower(\$1) == \"server:\" {sub(/^[^:]+:[[:space:]]*/, \"\"); print}" /tmp/server-headers.txt \
+        tr -d "\r" < /tmp/server-headers.txt \
+          | awk "tolower(\$1) == \"server:\" {sub(/^[^:]+:[[:space:]]*/, \"\"); print}" \
           | grep -Fxq "$EXPECTED_VALUE"
       fi
     '
