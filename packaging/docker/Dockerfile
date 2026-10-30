@@ -100,7 +100,7 @@ COPY --from=openeuler-builder /usr/local/bin/resty /usr/local/bin/resty
 COPY --from=openeuler-builder /usr/local/share/agw /usr/local/share/agw
 COPY packaging/docker/agw-entrypoint.sh /usr/local/bin/agw-entrypoint
 
-RUN install -m 0755 /usr/local/bin/agw-entrypoint \
+RUN chmod 0755 /usr/local/bin/agw-entrypoint \
     && bash /opt/agw/scripts/prepare-image.sh openeuler openeuler "$AGW_VERSION" \
     && rm -rf /opt/agw
 
@@ -144,7 +144,7 @@ COPY --from=ubuntu-builder /usr/local/bin/resty /usr/local/bin/resty
 COPY --from=ubuntu-builder /usr/local/share/agw /usr/local/share/agw
 COPY packaging/docker/agw-entrypoint.sh /usr/local/bin/agw-entrypoint
 
-RUN install -m 0755 /usr/local/bin/agw-entrypoint \
+RUN chmod 0755 /usr/local/bin/agw-entrypoint \
     && bash /opt/agw/scripts/prepare-image.sh ubuntu ubuntu "$AGW_VERSION" \
     && rm -rf /opt/agw
 
