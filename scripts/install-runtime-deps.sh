@@ -13,7 +13,7 @@ case "$DISTRO" in
     dnf -y --setopt=install_weak_deps=False \
       --setopt=max_parallel_downloads=10 install \
       brotli ca-certificates findutils libgcc libstdc++ libxml2 libxslt \
-      libyaml ncurses-libs openldap pcre readline
+      libyaml ncurses-libs openldap pcre pcre2 readline
     dnf clean all
     rm -rf /var/cache/dnf
     ;;
@@ -22,7 +22,8 @@ case "$DISTRO" in
     apt-get update
     apt-get install -y --no-install-recommends \
       ca-certificates findutils libbrotli1 libgcc-s1 libldap2 libncursesw6 \
-      libpcre3 libreadline8t64 libstdc++6 libxml2 libxslt1.1 libyaml-0-2
+      libpcre2-8-0 libpcre3 libreadline8t64 libstdc++6 libxml2 libxslt1.1 \
+      libyaml-0-2
     apt-get clean
     rm -rf /var/lib/apt/lists/*
     ;;
