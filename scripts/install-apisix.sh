@@ -44,7 +44,6 @@ tar -xzf "$DISTFILES/apisix-${APISIX_TAG}.tar.gz" --strip-components=1 -C "$WORK
   luarocks config variables.OPENSSL_LIBDIR "$OPENSSL_LIBDIR"
   luarocks config variables.OPENSSL_INCDIR "$OPENSSL_INCDIR"
   luarocks config variables.YAML_DIR "$YAML_DIR"
-  luarocks config variables.PCRE_DIR "$OR_PREFIX/pcre"
 
   luarocks make ./apisix-master-0.rockspec --tree="$WORK/deps"
 )

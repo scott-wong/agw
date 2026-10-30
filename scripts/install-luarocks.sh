@@ -32,7 +32,6 @@ luarocks config variables.OPENSSL_DIR "$OR_PREFIX/tongsuo"
 luarocks config variables.OPENSSL_LIBDIR "$OR_PREFIX/tongsuo/lib"
 luarocks config variables.OPENSSL_INCDIR "$OR_PREFIX/tongsuo/include"
 luarocks config variables.YAML_DIR /usr
-luarocks config variables.PCRE_DIR "$OR_PREFIX/pcre"
 
 luarocks --version
 rm -rf "$WORK"
