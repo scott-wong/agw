@@ -3,8 +3,8 @@
 
 每个变体在 CI 中由 Syft `v1.51.1` 生成 CycloneDX JSON：
 
-- `agw-3.19.0-agw.1-openeuler.cyclonedx.json`
-- `agw-3.19.0-agw.1-ubuntu.cyclonedx.json`
+- `agw-3.19.0-agw.3-openeuler.cyclonedx.json`
+- `agw-3.19.0-agw.3-ubuntu.cyclonedx.json`
 
 运行 SBOM 保存在对应 GitHub Actions artifact 中；正式发布时由 `publish.yml`
 重新生成并作为 GitHub Release 附件上传。仓库不再提交多 MB、会随基础镜像和 CI run

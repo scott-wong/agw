@@ -22,8 +22,15 @@ test -z "${LD_LIBRARY_PATH:-}" || {
 
 echo "[runtime] OpenResty / APISIX CLI"
 test -x /usr/local/openresty/bin/openresty
-/usr/local/openresty/bin/openresty -V 2>&1 | sed -n '1,5p'
-/usr/local/openresty/bin/openresty -V 2>&1 | grep -q 'openresty/1.31.8.1'
+openresty_version="$(/usr/local/openresty/bin/openresty -V 2>&1)"
+printf '%s\n' "$openresty_version" | awk 'NR <= 5'
+case "$openresty_version" in
+  *openresty/1.31.8.1*) ;;
+  *)
+    echo "ERROR: unexpected OpenResty version" >&2
+    exit 1
+    ;;
+esac
 test -x /usr/local/bin/apisix
 /usr/local/bin/apisix version
 
@@ -47,6 +54,15 @@ test -f "$APISIX_CLI_CONFIG"
 test -f "$APISIX_CLI_INIT"
 grep -q '^    "gm",$' "$APISIX_CLI_CONFIG"
 grep -q 'local ver_header = "agw"' "$APISIX_CLI_INIT"
+grep -q 'set_standard_pem_ssl_key' /usr/local/apisix/apisix/plugins/gm.lua
+grep -q 'for i = 2, #value.certs do' /usr/local/apisix/apisix/plugins/gm.lua
+
+echo "[runtime] bundled APISIX Admin UI"
+test -f /usr/local/apisix/ui/index.html
+grep -q '<title>Apache APISIX Dashboard</title>' /usr/local/apisix/ui/index.html
+test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
+test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.css' -print -quit)"
+test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.svg' -print -quit)"
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"
 bash "$SMOKE_DIR/gm-ntls-handshake.sh" "$OPENSSL"

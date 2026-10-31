@@ -9,6 +9,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 | 项 | 版本/tag/口径 | commit 或 SHA256 |
 |---|---|---|
 | APISIX | 3.19.0 | `473043623c161966f3f6ef4e8f12d2d8667a12d2` |
+| APISIX Admin UI | 3.19.0-0 | `d9c1d0f83b19b1d091d993ca727aa8d0870db8ca3c284f2eb207f4b1fc08c308` |
 | OpenResty | 1.31.8.1 | `265baf62de60397452f306d61b168ab2c1809d41` |
 | Tongsuo | 8.5.0 | `80cfbe3eb194a4d30da90742273c305ad4d096be` |
 | Tongsuo/OpenSSL 内核 | 3.5.4 | - |
@@ -16,6 +17,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 | PCRE2 | 10.49 | `6f9d7c1373262c541324a16a358785b33ef116cf` |
 | zlib | 1.3.2 | `bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16` |
 | LuaRocks | 3.12.0 | `745e3c5df2f955ecaf60ba1361cfc224564ef7ec210e9a784a3858ae853e9f7c` |
+| wasmtime C API | v0.38.1 | `686efb2a47eae17e11897c8e18116b38c1515bc2a74464d4d222c6265d1cff30` |
 
 ## 运行时模块
 

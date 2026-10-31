@@ -2,6 +2,7 @@
 # 许可证与归属
 
 - Apache APISIX `3.19.0`：Apache License 2.0。
+- APISIX Admin UI 静态资源：来自官方 `apisix_3.19.0-0_amd64.deb`，Apache License 2.0。
 - OpenResty `1.31.8.1`、Tongsuo `8.5.0`、
   PCRE2、zlib、LuaRocks 与运行时模块：以各自源码归档内 LICENSE/NOTICE 为准。
 - 最终镜像保留 APISIX 与 OpenResty 目录内的上游许可证、NOTICE 和第三方归属文件。

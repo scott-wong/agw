@@ -198,8 +198,10 @@ GitHub Actions artifact 中，不把大体积、易过期的运行产物提交�
 - 不交付：RPM、fpm 中间包、离线镜像 tar、全局 `<版本>` 或 `latest` 标签。
 - 运行用户：继承基础镜像默认用户；当前为 `root`，Nginx worker 为 `nobody`。
 - etcd：外置部署，由使用方提供兼容版本；镜像不捆绑 etcd。
-- TLS：Tongsuo `{env['TONGSHUO_VERSION']}` 动态链接，启用 NTLS/国密双证书能力。
+- TLS：Tongsuo `{env['TONGSHUO_VERSION']}` 动态链接，启用 TLCP/NTLS
+  双证书能力，并支持同一 SNI 下普通 TLS 与 TLCP 双栈。
 - 品牌头：`apisix.server_header` 缺省 `agw`，自定义字符串生效，`false` 抑制。
+- Admin UI：内置 APISIX Dashboard 静态资源，入口位于 Admin API 的 `/ui/`。
 
 兼容承诺仅覆盖上游 APISIX `{upstream}` 的协议与 Admin API 行为，以及本仓文档明确
 列出的发行层差异。
@@ -216,6 +218,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 | 项 | 版本/tag/口径 | commit 或 SHA256 |
 |---|---|---|
 {table_row("APISIX", env["APISIX_TAG"], f"`{env['APISIX_COMMIT']}`")}
+{table_row("APISIX Admin UI", env["APISIX_UI_DEB_VERSION"], f"`{env['APISIX_UI_DEB_SHA256']}`")}
 {table_row("OpenResty", env["OPENRESTY_VERSION"], f"`{env['OPENRESTY_COMMIT']}`")}
 {table_row("Tongsuo", env["TONGSHUO_VERSION"], f"`{env['TONGSHUO_COMMIT']}`")}
 {table_row("Tongsuo/OpenSSL 内核", env["TONGSHUO_OPENSSL_VERSION"], "-")}
@@ -223,6 +226,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 {table_row("PCRE2", env["PCRE2_VERSION"], f"`{env['PCRE2_COMMIT']}`")}
 {table_row("zlib", env["ZLIB_VERSION"], f"`{env['ZLIB_SHA256']}`")}
 {table_row("LuaRocks", env["LUAROCKS_VERSION"], f"`{env['LUAROCKS_SHA256']}`")}
+{table_row("wasmtime C API", env["WASMTIME_C_API_VERSION"], f"`{env['WASMTIME_C_API_SHA256']}`")}
 
 ## 运行时模块
 
@@ -246,6 +250,7 @@ OpenResty bundle 中的同名组件。
 # 许可证与归属
 
 - Apache APISIX `{env['APISIX_TAG']}`：Apache License 2.0。
+- APISIX Admin UI 静态资源：来自官方 `{env['APISIX_UI_DEB_NAME']}`，Apache License 2.0。
 - OpenResty `{env['OPENRESTY_VERSION']}`、Tongsuo `{env['TONGSHUO_VERSION']}`、
   PCRE2、zlib、LuaRocks 与运行时模块：以各自源码归档内 LICENSE/NOTICE 为准。
 - 最终镜像保留 APISIX 与 OpenResty 目录内的上游许可证、NOTICE 和第三方归属文件。
@@ -288,6 +293,10 @@ ubuntu-builder    -> ubuntu-final
    `{env['OPENRESTY_VERSION']}`；
 5. 安装 LuaRocks `{env['LUAROCKS_VERSION']}`，构建 APISIX 依赖并安装
    APISIX `{env['APISIX_TAG']}`。
+
+APISIX 源码发布包不包含已构建的 Admin UI。构建过程从固定 SHA256 的官方
+`{env['APISIX_UI_DEB_NAME']}` 中只提取 `/usr/local/apisix/ui`，不安装官方包内的
+OpenResty 或 APISIX 运行时。
 
 final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过
 RPATH 定位，不设置全局 `LD_LIBRARY_PATH`，避免污染 `dnf`、`git` 等系统工具使用的
@@ -355,8 +364,12 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 - 最终镜像无 gcc、g++、make。
 - 最终镜像不设置全局 `LD_LIBRARY_PATH`。
 - OpenResty、APISIX CLI、捆绑 PCRE2/zlib 与 `lua-resty-limit-traffic` 可加载。
+- Admin UI 入口与 JavaScript/CSS/SVG 静态资源已打包；`/ui/`、静态资源和 SPA
+  fallback 可通过 Admin API 端口访问。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
-- SM2 签名/加密双证书完成真实 NTLSv1.1 握手并通过证书链校验。
+- 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
+- TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。
+- Server Header 冒烟在容器内规范化夹具权限，并拒绝 worker 初始化错误。
 - standalone 文件驱动可启动。
 - 外置 etcd 下 Admin API 与数据面均可启动并返回配置后的 `Server` 头。
 

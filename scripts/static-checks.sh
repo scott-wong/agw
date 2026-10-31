@@ -30,10 +30,18 @@ trap 'rm -rf "$TMP"' EXIT
 cp -a build/src/. "$TMP/"
 (
   cd "$TMP"
-  patch -p1 --dry-run --batch < "$ROOT/patches/apisix/0001-agw-server-header-and-gm.patch"
-  patch -p1 --batch < "$ROOT/patches/apisix/0001-agw-server-header-and-gm.patch" >/dev/null
+  for patch_file in "$ROOT"/patches/apisix/*.patch; do
+    patch -p1 --dry-run --batch < "$patch_file"
+  done
+  for patch_file in "$ROOT"/patches/apisix/*.patch; do
+    patch -p1 --batch < "$patch_file" >/dev/null
+  done
   if command -v luac >/dev/null 2>&1; then
-    luac -p apisix/init.lua apisix/cli/config.lua apisix/cli/schema.lua
+    luac -p \
+      apisix/init.lua \
+      apisix/cli/config.lua \
+      apisix/cli/schema.lua \
+      apisix/plugins/gm.lua
   else
     echo "[static] luac 未安装，跳过 Lua 语法解析"
   fi

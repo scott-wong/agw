@@ -99,12 +99,15 @@ prepare_modules() {
     cd "$WORK/apisix-nginx-module/patch"
     ./patch.sh "../../openresty-${OPENRESTY_VERSION}"
   )
-  (
-    cd "$WORK/wasm-nginx-module"
-    # wget/curl link the distro's libcrypto; keep the newly built Tongsuo
-    # rpath/LD_LIBRARY_PATH out of this bootstrap process.
-    env -u LD_LIBRARY_PATH ./install-wasmtime.sh
-  )
+  # The upstream helper downloads this release asset without verification.
+  # Stage the pinned archive through make fetch and only unpack it here.
+  local wasmtime_archive="$DISTFILES/$WASMTIME_C_API_ASSET"
+  test -f "$wasmtime_archive"
+  rm -rf "$WORK/wasm-nginx-module/wasmtime-c-api"
+  mkdir -p "$WORK/wasm-nginx-module/wasmtime-c-api"
+  tar -xJf "$wasmtime_archive" --strip-components=1 \
+    -C "$WORK/wasm-nginx-module/wasmtime-c-api"
+  test -f "$WORK/wasm-nginx-module/wasmtime-c-api/lib/libwasmtime.so"
 
   local limit_bundle
   limit_bundle="$(find "$WORK/openresty-${OPENRESTY_VERSION}/bundle" -maxdepth 1 -type d -name 'lua-resty-limit-traffic-*' -print -quit)"

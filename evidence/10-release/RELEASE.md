@@ -1,8 +1,8 @@
 <!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
 # 发布契约
 
-当前版本为 `3.19.0-agw.1`，上游版本为 `3.19.0`。正式发布由 tag
-`v3.19.0-agw.1` 触发 `publish.yml`。
+当前版本为 `3.19.0-agw.3`，上游版本为 `3.19.0`。正式发布由 tag
+`v3.19.0-agw.3` 触发 `publish.yml`。
 
 1. 为 openEuler 与 Ubuntu 分别构建并推送 `<版本>-<变体>-candidate`。
 2. 两个 candidate 都必须通过回拉、镜像冒烟、外置 etcd、Syft 和 Trivy。

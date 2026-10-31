@@ -15,7 +15,7 @@ ARG UBUNTU_BASE=ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf9491
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-builder
 
-ARG AGW_VERSION=3.19.0-agw.1
+ARG AGW_VERSION=3.19.0-agw.3
 ENV DISTRO=openeuler
 WORKDIR /opt/agw
 
@@ -42,7 +42,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-builder
 
-ARG AGW_VERSION=3.19.0-agw.1
+ARG AGW_VERSION=3.19.0-agw.3
 ENV DISTRO=ubuntu
 WORKDIR /opt/agw
 
@@ -69,7 +69,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.19.0-agw.1
+ARG AGW_VERSION=3.19.0-agw.3
 
 LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.description="AGW API gateway, based on Apache APISIX" \
@@ -112,7 +112,7 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.19.0-agw.1
+ARG AGW_VERSION=3.19.0-agw.3
 
 LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.description="AGW API gateway, based on Apache APISIX" \

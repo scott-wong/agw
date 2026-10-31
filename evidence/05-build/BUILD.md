@@ -18,6 +18,10 @@ ubuntu-builder    -> ubuntu-final
 5. 安装 LuaRocks `3.12.0`，构建 APISIX 依赖并安装
    APISIX `3.19.0`。
 
+APISIX 源码发布包不包含已构建的 Admin UI。构建过程从固定 SHA256 的官方
+`apisix_3.19.0-0_amd64.deb` 中只提取 `/usr/local/apisix/ui`，不安装官方包内的
+OpenResty 或 APISIX 运行时。
+
 final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过
 RPATH 定位，不设置全局 `LD_LIBRARY_PATH`，避免污染 `dnf`、`git` 等系统工具使用的
 OpenSSL ABI。

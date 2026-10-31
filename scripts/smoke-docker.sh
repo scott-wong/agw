@@ -25,20 +25,20 @@ docker run --rm --entrypoint bash "$IMAGE" -c \
    && /usr/local/bin/apisix version | grep -q '${EXPECTED_UPSTREAM}' \
    && grep -q '^version=${EXPECTED_VERSION}$' /usr/local/share/agw/image-provenance.txt"
 
-# Docker passes the command's arguments after the shell script. Values are
-# derived from the third/fourth arguments to avoid interpolating test strings
-# into the shell program itself.
+# Pass fixture names and expected values through the environment so the
+# container-side shell program never interpolates host-controlled strings.
 run_header_case_with_env() {
   local config="$1" expected="$2" label="$3"
   echo "[smoke] Server header: ${label}"
   docker run --rm \
     --entrypoint bash \
+    -e CONFIG_NAME="$config" \
     -e EXPECTED_VALUE="$expected" \
-    -e EXPECTED_LABEL="$label" \
     -e EXPECTED_COUNT=1 \
-    -v "$SMOKE_DIR/$config:/usr/local/apisix/conf/config.yaml:ro" \
-    -v "$SMOKE_DIR/standalone-apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro" \
+    -v "$SMOKE_DIR:/smoke:ro" \
     "$IMAGE" -exc '
+      install -m 0644 "/smoke/$CONFIG_NAME" /usr/local/apisix/conf/config.yaml
+      install -m 0644 /smoke/standalone-apisix.yaml /usr/local/apisix/conf/apisix.yaml
       /usr/local/bin/apisix init
       /usr/local/bin/apisix start
       trap "/usr/local/bin/apisix stop >/dev/null 2>&1 || true" EXIT
@@ -49,6 +49,10 @@ run_header_case_with_env() {
         fi
         sleep 1
       done
+      if grep -q "init_worker_by_lua error" /usr/local/apisix/logs/error.log; then
+        cat /usr/local/apisix/logs/error.log
+        exit 1
+      fi
       exec 3<>/dev/tcp/127.0.0.1/9080
       printf "HEAD /no-such-route HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n" >&3
       timeout 10 cat <&3 > /tmp/server-headers.txt || true
@@ -71,9 +75,12 @@ echo "[smoke] Server header: disabled"
 docker run --rm \
   --entrypoint bash \
   -e EXPECTED_COUNT=0 \
-  -v "$SMOKE_DIR/standalone-config-disabled.yaml:/usr/local/apisix/conf/config.yaml:ro" \
-  -v "$SMOKE_DIR/standalone-apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro" \
+  -v "$SMOKE_DIR:/smoke:ro" \
   "$IMAGE" -exc '
+    install -m 0644 /smoke/standalone-config-disabled.yaml \
+      /usr/local/apisix/conf/config.yaml
+    install -m 0644 /smoke/standalone-apisix.yaml \
+      /usr/local/apisix/conf/apisix.yaml
     /usr/local/bin/apisix init
     /usr/local/bin/apisix start
     trap "/usr/local/bin/apisix stop >/dev/null 2>&1 || true" EXIT
@@ -84,6 +91,10 @@ docker run --rm \
       fi
       sleep 1
     done
+      if grep -q "init_worker_by_lua error" /usr/local/apisix/logs/error.log; then
+        cat /usr/local/apisix/logs/error.log
+        exit 1
+      fi
     exec 3<>/dev/tcp/127.0.0.1/9080
     printf "HEAD /no-such-route HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n" >&3
     timeout 10 cat <&3 > /tmp/server-headers.txt || true
@@ -97,11 +108,21 @@ for invalid in server-header-invalid-empty.yaml server-header-invalid-control.ya
   echo "[smoke] reject invalid config: ${invalid}"
   if docker run --rm \
       --entrypoint bash \
-      -v "$SMOKE_DIR/$invalid:/usr/local/apisix/conf/config.yaml:ro" \
-      "$IMAGE" -c '/usr/local/bin/apisix init >/tmp/invalid.log 2>&1'; then
+      -e CONFIG_NAME="$invalid" \
+      -v "$SMOKE_DIR:/smoke:ro" \
+      "$IMAGE" -c '
+        install -m 0644 "/smoke/$CONFIG_NAME" /usr/local/apisix/conf/config.yaml
+        /usr/local/bin/apisix init >/tmp/invalid.log 2>&1
+      '; then
     echo "ERROR: 非法 server_header 被接受: $invalid" >&2
     exit 1
   fi
 done
+
+echo "[smoke] same-SNI TLS/TLCP dual stack"
+docker run --rm \
+  --entrypoint bash \
+  -v "$SMOKE_DIR:/smoke:ro" \
+  "$IMAGE" /smoke/gm-dual-tls-apisix.sh
 
 echo "[smoke] all image checks OK"

@@ -27,6 +27,10 @@ ubuntu-final        干净 Ubuntu 基础镜像 + 对应 builder 的运行时
 Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中执行未校验的
 版本发现。
 
+APISIX 源码发布包不包含已构建的 Admin UI。基线额外固定官方
+`apisix_3.19.0-0_amd64.deb` 的 SHA256；构建时只提取其中的
+`/usr/local/apisix/ui`，不会安装或混用官方包内的运行时。
+
 ## 运行时
 
 `scripts/build-apisix-runtime.sh` 在目标发行版内：
@@ -38,6 +42,7 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 4. 运行模块自带的 `patch.sh`；`apisix-nginx-module 1.20.3` 与
    `ngx_multi_upstream_module 1.4.1` 原生识别 OpenResty `1.31.8.1`，不再维护旧
    OpenResty 的本地 patch 覆盖。
+   wasmtime C API `v0.38.1` 不再由模块脚本临时下载，而是从已校验归档解压。
 5. 按 API7 runtime `1.4.2` 口径构建 OpenResty，链接 Tongsuo、PCRE2 与 zlib，
    并用 `ldd` 断言动态库来源。
 
@@ -50,18 +55,20 @@ Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中
 `scripts/install-luarocks.sh` 用 OpenResty 的 LuaJIT 安装固定版本 LuaRocks。
 `scripts/install-apisix.sh`：
 
-1. 解压 APISIX `3.19.0` 并应用
-   `patches/apisix/0001-agw-server-header-and-gm.patch`。
+1. 解压 APISIX `3.19.0`，按文件名顺序应用 `patches/apisix/*.patch`。
 2. 用 LuaRocks 构建依赖和 APISIX CLI。
-3. 组装 `/usr/local/apisix`、`/usr/local/bin/apisix` 与依赖树。
-4. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
+3. 从已校验的官方 APISIX 包中只提取 `/usr/local/apisix/ui`。
+4. 组装 `/usr/local/apisix`、`/usr/local/bin/apisix` 与依赖树。
+5. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
    `EVP_ripemd160` 的现实。
 
-补丁做三件事：
+跟踪补丁做四件事：
 
 - 增加 `apisix.server_header` 默认值 `agw`；
 - 用 JSON Schema 拒绝空值、控制字符、首尾空白和超长值，并允许 `false`；
 - 把 `gm` 加入默认插件表。
+- 扩展 `gm.lua`，在 SM2 双证书之后安装同一 SNI 的普通 TLS 证书，实现普通
+  HTTPS 与 TLCP 共用监听端口。
 
 ## 最终阶段
 
@@ -73,6 +80,7 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 - 清理 OpenResty 安装产生的头文件、静态库和 pkgconfig；
 - 运行 `apisix init` 与 `openresty -t`；
 - 断言 CLI 默认 `Server` 头为 `agw`，且默认插件表包含 `gm`；
+- 断言 Admin UI 入口、JavaScript/CSS/SVG 静态资源已打包；
 - 把 `logs` 与五个 `*_temp` 目录授予 `65534:65534`，对应 `nobody` worker；
 - 写入镜像来源、运行用户与 Tongsuo CVE 对标状态。
 
@@ -89,7 +97,7 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 - openEuler GHA BuildKit 缓存使用 `mode=max`，同时保存 builder 阶段，避免脚本或
   补丁未变化时重复编译 Tongsuo 与 OpenResty；
 - `smoke-docker.sh`：运行时、默认/自定义/关闭 `Server` 头、无重复头、非法值拒绝、
-  standalone 模式、SM2 双证书 NTLS 握手；
+  standalone 模式、SM2 双证书 TLCP 握手、普通 TLS/TLCP 同 SNI 双栈；
 - `smoke-etcd.sh`：外置 etcd、Admin API、数据面；
 - Syft：两个变体各自生成 CycloneDX SBOM；
 - Trivy：唯一阻断扫描器，`HIGH,CRITICAL` + secret；
@@ -107,5 +115,5 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 
 ## 版本不可变性
 
-`VERSION` 是唯一事实源，当前为 `3.19.0-agw.1`。Git tag 必须是
+`VERSION` 是唯一事实源，当前为 `3.19.0-agw.3`。Git tag 必须是
 `v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。
