@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # install-security-tools.sh — 安装固定版本的 SBOM 与漏洞扫描工具
-# 用法: ./scripts/install-security-tools.sh [syft|grype|trivy|all ...]
+# 用法: ./scripts/install-security-tools.sh [syft|trivy|crane|all ...]
 # 环境变量:
 #   INSTALL_DIR  安装目录（默认 /usr/local/bin）
 
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 DOWNLOAD_TIMEOUT="${DOWNLOAD_TIMEOUT:-120}"
 DOWNLOAD_RETRIES="${DOWNLOAD_RETRIES:-0}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/baseline.env"
 
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -44,22 +47,26 @@ install_tool() {
   local version=""
   local asset=""
   local expected_sha256=""
+  local repo=""
 
   case "$tool" in
     syft)
-      version="v1.51.1"
-      asset="syft_1.51.1_linux_amd64.tar.gz"
-      expected_sha256="8fcb33017a0dc1058298c923c436d19dfa68ae93968e0b423248542e3afb9fc3"
-      ;;
-    grype)
-      version="v0.118.0"
-      asset="grype_0.118.0_linux_amd64.tar.gz"
-      expected_sha256="1d444c5e7360471815f7158f71935fcecc68a3c417d85c7344f770854300bba2"
+      version="$SYFT_VERSION"
+      asset="$SYFT_ASSET"
+      expected_sha256="$SYFT_SHA256"
+      repo="anchore/syft"
       ;;
     trivy)
-      version="v0.74.0"
-      asset="trivy_0.74.0_Linux-64bit.tar.gz"
-      expected_sha256="2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a"
+      version="$TRIVY_VERSION"
+      asset="$TRIVY_ASSET"
+      expected_sha256="$TRIVY_SHA256"
+      repo="aquasecurity/trivy"
+      ;;
+    crane)
+      version="$CRANE_VERSION"
+      asset="$CRANE_ASSET"
+      expected_sha256="$CRANE_SHA256"
+      repo="google/go-containerregistry"
       ;;
     *)
       echo "错误: 不支持的工具 $tool" >&2
@@ -67,10 +74,7 @@ install_tool() {
       ;;
   esac
 
-  local release_url="https://github.com/anchore/${tool}/releases/download/${version}/${asset}"
-  if [[ "$tool" == "trivy" ]]; then
-    release_url="https://github.com/aquasecurity/trivy/releases/download/${version}/${asset}"
-  fi
+  local release_url="https://github.com/${repo}/releases/download/${version}/${asset}"
   local urls=(
     "https://ghfast.top/${release_url}"
     "https://gh-proxy.com/${release_url}"
@@ -131,7 +135,7 @@ install_tool() {
 }
 
 if [[ "$#" -eq 0 || "${1:-}" == "all" ]]; then
-  set -- syft grype trivy
+  set -- syft trivy crane
 fi
 
 for tool in "$@"; do

@@ -1,0 +1,23 @@
+# AGW OpenSSL/Tongsuo defaults.
+#
+# Keep the OpenSSL 3 provider explicitly active and retain security level 2.
+# Tongsuo's NTLS SM2 suites are expected to operate at this level; the GM smoke
+# test uses certificates with the keyUsage extensions required by Tongsuo 8.5.
+
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = provider_sect
+ssl_conf = ssl_sect
+
+[provider_sect]
+default = default_sect
+
+[default_sect]
+activate = 1
+
+[ssl_sect]
+system_default = system_default_sect
+
+[system_default_sect]
+CipherString = DEFAULT:@SECLEVEL=2

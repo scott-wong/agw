@@ -1,6 +1,11 @@
-# SBOM 归档（04-sbom）
+<!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
+# SBOM 归档策略
 
-本目录由 GitHub Actions 生成，包含最终 RPM 与发布镜像的 CycloneDX SBOM。
-`build.yml` 将 RPM SBOM 回填到本目录并以 artifact 归档；`publish.yml` 对
-GHCR 发布镜像再次生成 SBOM 并随 GitHub Release 附件发布。权威归档即本目录
-与对应 GitHub Actions run 记录（run URL 由发布清单 `workflowRun` 字段给出）。
+每个变体在 CI 中由 Syft `v1.51.1` 生成 CycloneDX JSON：
+
+- `agw-3.19.0-agw.1-openeuler.cyclonedx.json`
+- `agw-3.19.0-agw.1-ubuntu.cyclonedx.json`
+
+运行 SBOM 保存在对应 GitHub Actions artifact 中；正式发布时由 `publish.yml`
+重新生成并作为 GitHub Release 附件上传。仓库不再提交多 MB、会随基础镜像和 CI run
+变化的 SBOM 副本，避免用户把历史文件误认为当前镜像事实。

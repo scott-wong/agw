@@ -1,11 +1,10 @@
 .idea/
-apisix/
+/apisix/
 apisix-runtime/
 build/
 distfiles/
-out/
 output/
-rpms/
 .DS_Store
 output-runtime/
 output-apisix/
+evidence/04-sbom/*.cyclonedx.json

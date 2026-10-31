@@ -1,10 +1,15 @@
-# AGW 产品说明（01-product）
+<!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
+# AGW 产品说明
 
-AGW：独立开放的 API 网关发行版，基于 Apache APISIX，面向自托管与独立部署场景。
-- 版本：`3.18.0-agw.2`（`<上游版本>-agw.N`）
-- 交付物：最终 RPM（EL8）+ Anolis 8.10 Docker 镜像（`ghcr.io/scott-wong/agw`）；不交付 `apisix-runtime` / `apisix` 中间 RPM
-- 镜像基础层：自建加固基线 `ghcr.io/scott-wong/anolis-secure:latest`（digest 锁定在 `scripts/baseline.env`），以非 root 用户 `10001:10001` 运行（见 `docs/adr/0005`）
-- 兼容定位：仅承诺"与上游 APISIX 3.18 同版本协议与 Admin API 兼容"；不承诺商业增强
-- TLS：构建期以 Tongsuo（铜锁）替代 OpenSSL，提供国密 NTLS / SM2 双证书能力
-- etcd：外置（用户自备，兼容 3.5.x / 3.6），发布物不捆绑
-- 强制组合：Anolis 8.10 × x86_64；aarch64 不承诺
+- 产品：AGW，独立开放的 API 网关发行版。
+- 当前版本：`3.19.0-agw.1`。
+- 上游关系：based on Apache APISIX `3.19.0`。
+- 交付物：`linux/amd64` 的 openEuler 与 Ubuntu 两个最终容器镜像。
+- 不交付：RPM、fpm 中间包、离线镜像 tar、全局 `<版本>` 或 `latest` 标签。
+- 运行用户：继承基础镜像默认用户；当前为 `root`，Nginx worker 为 `nobody`。
+- etcd：外置部署，由使用方提供兼容版本；镜像不捆绑 etcd。
+- TLS：Tongsuo `8.5.0` 动态链接，启用 NTLS/国密双证书能力。
+- 品牌头：`apisix.server_header` 缺省 `agw`，自定义字符串生效，`false` 抑制。
+
+兼容承诺仅覆盖上游 APISIX `3.19.0` 的协议与 Admin API 行为，以及本仓文档明确
+列出的发行层差异。

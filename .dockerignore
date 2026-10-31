@@ -1,0 +1,9 @@
+.git
+.github
+build
+docs
+evidence
+modules
+README.md
+CONTEXT.md
+Makefile

@@ -1,141 +1,375 @@
 name: agw publish
 
-# 发布流（tag `v*` 或手动触发）：
-#   构建最终 RPM → 组装并推送 GHCR 三标签（<版本> / <上游版本> / latest）
-#   → 回拉校验（Anolis 8.10 + 版本 + Server: agw + 国密握手）→ 生成发布物 SBOM
-#   → 生成发布清单 → GitHub Release 附件（RPM + SBOM + 清单）。
-# 本仓独立自洽：不引用任何外部仓库的 reusable workflow。
-# <版本> 标签与 Git tag 不可移动——重新发布一律 bump VERSION。
-
+# Publication is tag-only. Candidate images for both distributions must pass
+# every gate before final tags are created. Formal tags never include an
+# ambiguous global "<version>" or "latest".
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
-  publish:
-    name: Build, push GHCR, verify pullback, release
+  validate:
+    name: Validate immutable release tag
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      upstream: ${{ steps.resolve.outputs.upstream }}
+      repo: ${{ steps.resolve.outputs.repo }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # build-push 带 cache-to: type=gha，默认 docker 驱动不支持 cache 导出，
-      # 必须显式起 buildx 容器驱动。tag 调用只恢复缓存，不创建 tag 专属缓存。
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Resolve version and image names
-        id: ver
+      - name: Resolve and verify version
+        id: resolve
         run: |
-          set -e
-          VER=$(tr -d ' \n' < VERSION)
-          UPSTREAM=$(echo "$VER" | cut -d- -f1)
-          # ghcr 要求全小写
-          GHCR="ghcr.io/${{ github.repository_owner }}/agw"
-          GHCR=$(echo "$GHCR" | tr '[:upper:]' '[:lower:]')
-          TAGS="$GHCR:$VER"$'\n'"$GHCR:$UPSTREAM"$'\n'"$GHCR:latest"
+          set -euo pipefail
+          VERSION="$(tr -d ' \n' < VERSION)"
+          UPSTREAM="${VERSION%%-*}"
+          test "${GITHUB_REF_NAME}" = "v${VERSION}"
+          REPO="$(echo "ghcr.io/${GITHUB_REPOSITORY_OWNER}/agw" | tr '[:upper:]' '[:lower:]')"
           {
-            echo "version=$VER"
-            echo "upstream=$UPSTREAM"
-            echo "ghcr_image=$GHCR"
-            echo "tags<<TAGS_EOF"
-            echo "$TAGS"
-            echo "TAGS_EOF"
+            echo "version=${VERSION}"
+            echo "upstream=${UPSTREAM}"
+            echo "repo=${REPO}"
           } >> "$GITHUB_OUTPUT"
-          echo "$TAGS"
+      - name: Cache verified source archives
+        uses: actions/cache@v4
+        with:
+          path: distfiles
+          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+      - run: make fetch
+      - run: make verify
 
-      - name: Build release assets in place (make release-assets)
-        run: make release-assets
-
-      - name: Collect release assets
-        run: |
-          set -e
-          mkdir -p /tmp/release-assets
-          ASSETS=$(ls out/agw-*.rpm 2>/dev/null | grep -v -e debuginfo -e debugsource || true)
-          [ -n "$ASSETS" ] || { echo "未找到发布物（glob: out/agw-*.rpm）"; ls -R . | head -n 40; exit 1; }
-          for a in $ASSETS; do
-            cp "$a" /tmp/release-assets/
-            sha256sum "/tmp/release-assets/$(basename "$a")"
-          done
-          RPM_NAME=$(basename "$(echo "$ASSETS" | head -n1)")
-          echo "rpm_name=$RPM_NAME" >> "$GITHUB_OUTPUT"
-        id: assets
-
+  build-candidate:
+    name: Candidate ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - openeuler
+          - ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: actions/cache@v4
+        with:
+          path: distfiles
+          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+      - run: make fetch
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push to GHCR
+      - name: Build and push candidate
         id: push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: packaging/docker/Dockerfile
-          push: true
-          tags: ${{ steps.ver.outputs.tags }}
-          cache-from: type=gha,scope=agw-publish
-          cache-to: ${{ github.ref_type == 'tag' && '' || 'type=gha,mode=min,scope=agw-publish' }}
+          target: ${{ matrix.variant }}-final
           platforms: linux/amd64
-
-      # 回拉校验：发布的镜像必须能在干净环境跑起来，且底座/品牌/国密三项都对。
-      - name: Verify pushed image (pullback)
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate
+          build-args: |
+            AGW_VERSION=${{ needs.validate.outputs.version }}
+          cache-from: type=gha,scope=agw-${{ matrix.variant }}
+          cache-to: type=gha,mode=min,scope=agw-${{ matrix.variant }}
+      - name: Record candidate digest
         run: |
-          GHCR="${{ steps.ver.outputs.ghcr_image }}"
-          VER="${{ steps.ver.outputs.version }}"
-          docker pull "$GHCR:$VER"
-          docker run --rm --entrypoint cat "$GHCR:$VER" /etc/os-release | grep -qi anolis && echo "GHCR Anolis OK"
-          docker run --rm --entrypoint bash "$GHCR:$VER" -c '/usr/bin/apisix version | head -n1'
-          bash scripts/smoke-docker.sh "$GHCR:$VER"
+          mkdir -p digest
+          echo "${{ steps.push.outputs.digest }}" > "digest/${{ matrix.variant }}.digest"
+          cat "digest/${{ matrix.variant }}.digest"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agw-candidate-digest-${{ matrix.variant }}
+          path: digest/${{ matrix.variant }}.digest
+          retention-days: 7
+          if-no-files-found: error
 
-      # Release 必须永久留存镜像 SBOM：直接扫描刚推送的 GHCR 镜像，
-      # 不依赖 build 流的短期 artifact 或异步 evidence 回填。
-      - name: Generate image SBOM for Release
+  verify-candidate:
+    name: Verify candidate ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - build-candidate
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - openeuler
+          - ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull candidate
         run: |
-          set -e
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-          GHCR="${{ steps.ver.outputs.ghcr_image }}"
-          VER="${{ steps.ver.outputs.version }}"
-          syft scan "registry:$GHCR:$VER" -o cyclonedx-json \
-            > "/tmp/release-assets/agw-${VER}-image.cyclonedx.json"
-          ls -lh "/tmp/release-assets/agw-${VER}-image.cyclonedx.json"
+          docker pull "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
+      - name: Candidate image smoke
+        run: |
+          bash scripts/smoke-docker.sh \
+            "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate" \
+            "${{ matrix.variant }}" \
+            "${{ needs.validate.outputs.version }}"
+      - name: Candidate external-etcd smoke
+        run: |
+          bash scripts/smoke-etcd.sh \
+            "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
 
+  supply-chain-candidate:
+    name: Supply chain candidate ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - build-candidate
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - openeuler
+          - ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: bash scripts/install-security-tools.sh syft trivy
+      - name: Generate candidate SBOM
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          REF="${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
+          docker pull "$REF"
+          syft scan "docker:${REF}" -o cyclonedx-json \
+            > "artifacts/agw-${{ needs.validate.outputs.version }}-${{ matrix.variant }}.cyclonedx.json"
+      - name: Blocking Trivy scan
+        run: |
+          set -euo pipefail
+          REF="${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
+          SKIP_FILES=(
+            --skip-files "/usr/local/apisix/conf/cert/ssl_PLACE_HOLDER.key"
+            --skip-files "**/apisix/conf/cert/ssl_PLACE_HOLDER.key"
+            --skip-files "/usr/local/openresty/pod/lua-resty-rsa-*.pod"
+            --skip-files "**/lua-resty-rsa-*.pod"
+          )
+          set +e
+          trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
+            --exit-code 1 --format sarif \
+            -o "artifacts/trivy-${{ matrix.variant }}.sarif" \
+            "${SKIP_FILES[@]}" "$REF"
+          rc=$?
+          trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
+            --exit-code 0 --format table \
+            "${SKIP_FILES[@]}" "$REF" > "artifacts/trivy-${{ matrix.variant }}.txt" 2>&1 || true
+          exit "$rc"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agw-candidate-sbom-${{ matrix.variant }}
+          path: artifacts/*.cyclonedx.json
+          retention-days: 30
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agw-candidate-trivy-${{ matrix.variant }}
+          path: |
+            artifacts/trivy-${{ matrix.variant }}.sarif
+            artifacts/trivy-${{ matrix.variant }}.txt
+          retention-days: 30
+          if-no-files-found: warn
+
+  promote:
+    name: Promote both candidates to final tags
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - verify-candidate
+      - supply-chain-candidate
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: agw-candidate-digest-*
+          path: digest
+          merge-multiple: true
+      - run: bash scripts/install-security-tools.sh crane
+      - name: Promote exact candidate digests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${{ needs.validate.outputs.repo }}"
+          VERSION="${{ needs.validate.outputs.version }}"
+          UPSTREAM="${{ needs.validate.outputs.upstream }}"
+          printf '%s' "$GH_TOKEN" | crane auth login ghcr.io \
+            -u "${{ github.actor }}" --password-stdin
+          test -s digest/openeuler.digest
+          test -s digest/ubuntu.digest
+          OPENEULER_DIGEST="$(tr -d ' \n' < digest/openeuler.digest)"
+          UBUNTU_DIGEST="$(tr -d ' \n' < digest/ubuntu.digest)"
+          [[ "$OPENEULER_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$UBUNTU_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+
+          FINAL_TAGS=(
+            "${VERSION}-openeuler" "${UPSTREAM}-openeuler" "latest-openeuler"
+            "${VERSION}-ubuntu" "${UPSTREAM}-ubuntu" "latest-ubuntu"
+          )
+          for tag in "${FINAL_TAGS[@]}"; do
+            if crane digest "${REPO}:${tag}" >/dev/null 2>&1; then
+              echo "ERROR: 发布标签已存在，拒绝移动: ${REPO}:${tag}" >&2
+              exit 1
+            fi
+          done
+
+          crane tag "${REPO}@${OPENEULER_DIGEST}" "${VERSION}-openeuler"
+          crane tag "${REPO}@${OPENEULER_DIGEST}" "${UPSTREAM}-openeuler"
+          crane tag "${REPO}@${OPENEULER_DIGEST}" "latest-openeuler"
+          crane tag "${REPO}@${UBUNTU_DIGEST}" "${VERSION}-ubuntu"
+          crane tag "${REPO}@${UBUNTU_DIGEST}" "${UPSTREAM}-ubuntu"
+          crane tag "${REPO}@${UBUNTU_DIGEST}" "latest-ubuntu"
+
+          python3 - "$OPENEULER_DIGEST" "$UBUNTU_DIGEST" > final-digests.json <<'PY'
+          import json
+          import sys
+          print(json.dumps({"openeuler": sys.argv[1], "ubuntu": sys.argv[2]}, indent=2))
+          PY
+          cat final-digests.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agw-final-digests
+          path: final-digests.json
+          retention-days: 30
+          if-no-files-found: error
+
+  verify-final:
+    name: Verify final ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - promote
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - openeuler
+          - ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull final image
+        run: |
+          docker pull "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}"
+      - name: Final image smoke
+        run: |
+          bash scripts/smoke-docker.sh \
+            "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}" \
+            "${{ matrix.variant }}" \
+            "${{ needs.validate.outputs.version }}"
+      - name: Final external-etcd smoke
+        run: |
+          bash scripts/smoke-etcd.sh \
+            "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}"
+
+  release:
+    name: Generate assets and GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - promote
+      - verify-final
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agw-final-digests
+          path: .
+      - run: bash scripts/install-security-tools.sh syft
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate final SBOMs
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          REPO="${{ needs.validate.outputs.repo }}"
+          VERSION="${{ needs.validate.outputs.version }}"
+          for variant in openeuler ubuntu; do
+            REF="${REPO}:${VERSION}-${variant}"
+            docker pull "$REF"
+            syft scan "docker:${REF}" -o cyclonedx-json \
+              > "release-assets/agw-${VERSION}-${variant}.cyclonedx.json"
+          done
+          ls -lh release-assets
       - name: Write release manifest
         env:
-          RELEASE_VERSION: ${{ steps.ver.outputs.version }}
-          IMAGE_REPOSITORY: ${{ steps.ver.outputs.ghcr_image }}
-          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
-          RPM_FILE: /tmp/release-assets/${{ steps.assets.outputs.rpm_name }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
           SOURCE_COMMIT: ${{ github.sha }}
           WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          OUT: /tmp/release-assets/release-manifest.json
-        run: bash scripts/write-release-manifest.sh
-
-      # 发布物随附：artifact 通道受配额限制不可靠，附到 GitHub Release 永久留存
-      - name: Attach release assets to Release
-        env:
-          GH_TOKEN: ${{ github.token }}
+          OPENEULER_SBOM: ${{ github.workspace }}/release-assets/agw-${{ needs.validate.outputs.version }}-openeuler.cyclonedx.json
+          UBUNTU_SBOM: ${{ github.workspace }}/release-assets/agw-${{ needs.validate.outputs.version }}-ubuntu.cyclonedx.json
+          OUT: ${{ github.workspace }}/release-assets/release-manifest.json
         run: |
-          set -e
-          VER="${{ steps.ver.outputs.version }}"
-          TAG="v$VER"
-          ASSETS=$(ls /tmp/release-assets/*)
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            gh release upload "$TAG" $ASSETS --clobber --repo "$GITHUB_REPOSITORY"
-            echo "[release] 发布物已附到 Release $TAG"
-          else
-            gh release create "$TAG" $ASSETS --repo "$GITHUB_REPOSITORY" \
-              --title "AGW $VER" \
-              --notes "AGW $VER 发布物：RPM（EL8，Anolis 8.10 验证）、镜像 ${{ steps.ver.outputs.ghcr_image }}（digest ${{ steps.push.outputs.digest }}）、发布物 SBOM 与 release-manifest.json 见附件。基线见 scripts/baseline.env，证据包权威归档见仓库 evidence/。"
-            echo "[release] 已创建 Release $TAG 并附发布物"
+          OPENEULER_DIGEST="$(python3 -c 'import json; print(json.load(open("final-digests.json"))["openeuler"])')"
+          UBUNTU_DIGEST="$(python3 -c 'import json; print(json.load(open("final-digests.json"))["ubuntu"])')"
+          export OPENEULER_DIGEST UBUNTU_DIGEST
+          bash scripts/write-release-manifest.sh
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          REPO: ${{ needs.validate.outputs.repo }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "ERROR: Release $TAG 已存在；不可移动，请 bump VERSION" >&2
+            exit 1
           fi
+          OPENEULER_DIGEST="$(python3 -c 'import json; print(json.load(open("final-digests.json"))["openeuler"])')"
+          UBUNTU_DIGEST="$(python3 -c 'import json; print(json.load(open("final-digests.json"))["ubuntu"])')"
+          NOTES="$(mktemp)"
+          cat > "$NOTES" <<EOF
+          AGW ${VERSION} 同时发布两个镜像变体（linux/amd64）：
+
+          - openEuler 24.03 LTS SP4: ${REPO}:${VERSION}-openeuler, ${REPO}:${{ needs.validate.outputs.upstream }}-openeuler, ${REPO}:latest-openeuler
+            digest: ${OPENEULER_DIGEST}
+          - Ubuntu 24.04: ${REPO}:${VERSION}-ubuntu, ${REPO}:${{ needs.validate.outputs.upstream }}-ubuntu, ${REPO}:latest-ubuntu
+            digest: ${UBUNTU_DIGEST}
+
+          本版本不交付 RPM、不提供离线镜像 tar。附件包含两个 CycloneDX SBOM 与 release-manifest.json。
+          Trivy 为唯一阻断扫描器；openEuler 的 OS RPM 漏洞库覆盖在 Trivy 中仍为 unsupported。
+          EOF
+          gh release create "$TAG" \
+            release-assets/agw-${VERSION}-openeuler.cyclonedx.json \
+            release-assets/agw-${VERSION}-ubuntu.cyclonedx.json \
+            release-assets/release-manifest.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "AGW ${VERSION}" \
+            --notes-file "$NOTES"

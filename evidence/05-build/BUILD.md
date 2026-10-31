@@ -1,15 +1,27 @@
-# 构建说明（05-build）
+<!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
+# 构建链
 
-正式构建采用“运行时镜像 -> 最终 RPM”链（同一 run 串行完成）：
-1. 运行时镜像：从锁定的 OpenResty release tarball（SHA256 校验）+ 7 个锁定模块 + Tongsuo（commit 固定）编译 `/usr/local/openresty`；
-2. `agw` RPM：APISIX 3.18.0（tag commit 校验）+ 内嵌 runtime 树，fpm 打包为 `agw-3.18.0-agw.2.el8.x86_64.rpm`（Release `agw.2`）。
+`packaging/docker/Dockerfile` 有两个 builder 和两个 final stage：
 
-`apisix-runtime` 0.0.0-0 与 `apisix` RPM 仅为兼容历史调试流程保留，不进入
-`out/`，不属于正式交付物；`build.yml` 对 `out/` 断言只允许最终 `agw-*.rpm`。
-构建底座：`packaging/fpm`（打包工具镜像，不进交付物）；RPM Smoke 底座：官方 Anolis 8.10。
-交付镜像底座：`ghcr.io/scott-wong/anolis-secure:latest`（自建加固 Anolis 8.10，digest 由
-`make fetch` 校验）。该基础层默认非 root，Dockerfile 构建阶段显式 `USER root` 装包，
-末尾切回 `USER 10001:10001`，并在运行期用户下断言 `apisix init` 可写 `conf/` 与 `logs/`。
-每次构建记录 OpenResty provenance stamp（`/tmp/openresty-commit`，release-<版本>），
-并在 `scripts/build-apisix-runtime.sh` 内断言 `nginx` 的 `libssl.so` / `libcrypto.so`
-解析到 Tongsuo 前缀（`ldd` 硬校验），国密补丁未生效即构建失败。
+```text
+openeuler-builder -> openeuler-final
+ubuntu-builder    -> ubuntu-final
+```
+
+每个 builder 在目标发行版内独立完成：
+
+1. 安装构建依赖；
+2. 从已校验归档构建 PCRE2 `10.49` 与 zlib `1.3.2`；
+3. 构建 Tongsuo `8.5.0`，启用 `enable-ntls`；
+4. 按 API7 runtime `apisix-runtime/1.4.2` 口径构建 OpenResty
+   `1.31.8.1`；
+5. 安装 LuaRocks `3.12.0`，构建 APISIX 依赖并安装
+   APISIX `3.19.0`。
+
+final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过
+RPATH 定位，不设置全局 `LD_LIBRARY_PATH`，避免污染 `dnf`、`git` 等系统工具使用的
+OpenSSL ABI。
+
+openEuler RPM 依赖优先从境外 XTOM 镜像获取，ACCUM 回退，官方源最后；RPM 仍启用
+openEuler GPG 校验。GitHub Actions 使用 GHA BuildKit 缓存保存已验证的 builder
+阶段，源码归档由 `actions/cache` 保存。

@@ -1,8 +1,8 @@
 # 构建期以 Tongsuo 替代 OpenSSL，且不传 `--with-openssl`
 
 运行时编译时用 Tongsuo（铜锁）替代 OpenSSL，以 `enable-ntls` 提供国密 NTLS
-双证书能力。基线锁定 `Tongsuo-Project/Tongsuo` 的 `master` 上某个 commit，而不是
-分支名——master 会前进，commit 不会。
+双证书能力。基线锁定 `Tongsuo-Project/Tongsuo` 的正式 release `8.5.0`，同时校验
+tag commit 与源码归档 SHA256。
 
 关键点是**不给 OpenResty 的 `./configure` 传 `--with-openssl`**：nginx 该选项要求
 OpenSSL **源码目录**，会拿 nginx 自己的参数重跑 `Configure`，从而丢掉 `enable-ntls`，
@@ -19,5 +19,8 @@ OpenSSL **源码目录**，会拿 nginx 自己的参数重跑 `Configure`，从�
 ## Consequences
 
 - Tongsuo 以动态库形式随运行时镜像分发，`OPENSSL_PREFIX`（默认
-  `/usr/local/openresty/tongsuo`，`libdir=lib64`）成为构建契约的一部分。
-- 上游 master 前进即触发基线门禁红灯，必须复核国密握手并显式 bump commit。
+  `/usr/local/openresty/tongsuo`，`libdir=lib`）成为构建契约的一部分。
+- tag commit 或 tarball SHA256 漂移即触发基线门禁红灯，必须复核国密握手并显式
+  bump 基线。
+- AGW 不宣称 Tongsuo 与 OpenSSL 的 CVE 修复状态等价；发布清单固定记录
+  `tongsuoCveParity: not-audited`。
