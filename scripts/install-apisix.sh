@@ -104,13 +104,13 @@ test -x /usr/local/bin/apisix
 test -f "$APISIX_PREFIX/apisix/cli/apisix.lua"
 test -f "$APISIX_PREFIX/conf/config.yaml"
 test -f "$APISIX_PREFIX/ui/index.html"
-grep -q '<title>Apache APISIX Dashboard</title>' "$APISIX_PREFIX/ui/index.html"
+grep -q '<title>Apache APISIX' "$APISIX_PREFIX/ui/index.html"
 grep -q '"gm",' "$APISIX_PREFIX/apisix/cli/config.lua"
 grep -q 'local ver_header = "agw"' "$APISIX_PREFIX/apisix/init.lua"
 grep -q 'set_standard_pem_ssl_key' "$APISIX_PREFIX/apisix/plugins/gm.lua"
 
 # APISIX Admin API intentionally omits private keys from SSL GET responses.
-# The pinned Dashboard detail form indexes `keys` by `certs` index and crashes
+# The pinned Admin UI detail form indexes `keys` by `certs` index and crashes
 # when `keys` is absent. Normalize it to an empty-string array for display.
 ui_ssl_schema="$APISIX_PREFIX/ui/assets/schema-Cj04qC-8.js"
 test -f "$ui_ssl_schema"

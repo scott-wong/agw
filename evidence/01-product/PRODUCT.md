@@ -11,7 +11,7 @@
 - TLS：Tongsuo `8.5.0` 动态链接，启用 TLCP/NTLS
   双证书能力，并支持同一 SNI 下普通 TLS 与 TLCP 双栈。
 - 品牌头：`apisix.server_header` 缺省 `agw`，自定义字符串生效，`false` 抑制。
-- Admin UI：内置 APISIX Dashboard 静态资源，入口位于 Admin API 的 `/ui/`。
+- Admin UI：内置 APISIX Admin UI 静态资源，入口位于 Admin API 的 `/ui/`。
 
 兼容承诺仅覆盖上游 APISIX `3.19.0` 的协议与 Admin API 行为，以及本仓文档明确
 列出的发行层差异。

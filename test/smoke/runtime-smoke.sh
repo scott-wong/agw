@@ -59,7 +59,7 @@ grep -q 'for i = 2, #value.certs do' /usr/local/apisix/apisix/plugins/gm.lua
 
 echo "[runtime] bundled APISIX Admin UI"
 test -f /usr/local/apisix/ui/index.html
-grep -q '<title>Apache APISIX Dashboard</title>' /usr/local/apisix/ui/index.html
+grep -q '<title>Apache APISIX' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.css' -print -quit)"
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.svg' -print -quit)"

@@ -201,7 +201,7 @@ GitHub Actions artifact 中，不把大体积、易过期的运行产物提交�
 - TLS：Tongsuo `{env['TONGSHUO_VERSION']}` 动态链接，启用 TLCP/NTLS
   双证书能力，并支持同一 SNI 下普通 TLS 与 TLCP 双栈。
 - 品牌头：`apisix.server_header` 缺省 `agw`，自定义字符串生效，`false` 抑制。
-- Admin UI：内置 APISIX Dashboard 静态资源，入口位于 Admin API 的 `/ui/`。
+- Admin UI：内置 APISIX Admin UI 静态资源，入口位于 Admin API 的 `/ui/`。
 
 兼容承诺仅覆盖上游 APISIX `{upstream}` 的协议与 Admin API 行为，以及本仓文档明确
 列出的发行层差异。
@@ -367,7 +367,7 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 - Admin UI 入口与 JavaScript/CSS/SVG 静态资源已打包；`/ui/`、静态资源和 SPA
   fallback 可通过 Admin API 端口访问。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
-- Dashboard SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
+- Admin UI 的 SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
 - 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
 - TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。
 - Server Header 冒烟在容器内规范化夹具权限，并拒绝 worker 初始化错误。

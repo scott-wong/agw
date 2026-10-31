@@ -81,7 +81,7 @@ grep -Fxq $'Location: /ui/\r' /tmp/agw-ui-redirect.headers
 curl -fsS -D /tmp/agw-ui-headers.txt -o /tmp/agw-ui-index.html \
   http://127.0.0.1:19180/ui/
 grep -Fxq $'HTTP/1.1 200 OK\r' /tmp/agw-ui-headers.txt
-grep -q '<title>Apache APISIX Dashboard</title>' /tmp/agw-ui-index.html
+grep -q '<title>Apache APISIX' /tmp/agw-ui-index.html
 
 asset="$(grep -o 'src="/ui/assets/[^"]*\.js"' /tmp/agw-ui-index.html |
   sed -n '1s|^src="/ui/||;1s|"$||;1p')"

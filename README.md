@@ -133,11 +133,11 @@ TLCP 测试客户端，并信任相应 SM2 根证书。
 AGW 不对标 OpenSSL 的 CVE 修复状态；发布清单记录
 `tongsuoCveParity: not-audited`，不宣称两者安全等价。
 
-最终镜像内置 APISIX Dashboard UI，访问路径为 Admin API 的 `/ui/`。UI 静态文件
+最终镜像内置 APISIX Admin UI，访问路径为 Admin API 的 `/ui/`。UI 静态文件
 从同版本官方 APISIX `3.19.0-0` 包中提取并校验 SHA256，AGW 的 OpenResty、
 Tongsuo 与 APISIX 服务端代码仍由本仓独立构建。
 
-Dashboard SVG 详情页会归一化 Admin API 隐藏私钥后缺失的 `keys` 字段，避免带
+Admin UI 的 SVG 详情页会归一化 Admin API 隐藏私钥后缺失的 `keys` 字段，避免带
 `certs` 的 SSL 对象详情页抛出 `Cannot read properties of undefined (reading 'id')`。
 
 ## etcd 与 standalone

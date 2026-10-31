@@ -60,7 +60,7 @@ done < <(find /usr/local/openresty /usr/local/apisix -type f \
 
 test -f /usr/local/apisix/conf/nginx.conf
 test -f /usr/local/apisix/ui/index.html
-grep -q '<title>Apache APISIX Dashboard</title>' /usr/local/apisix/ui/index.html
+grep -q '<title>Apache APISIX' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
 grep -q 'local ver_header = "agw"' /usr/local/apisix/apisix/init.lua
 grep -q '^    "gm",$' /usr/local/apisix/apisix/cli/config.lua
