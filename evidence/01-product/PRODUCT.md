@@ -2,7 +2,7 @@
 # AGW 产品说明
 
 - 产品：AGW，独立开放的 API 网关发行版。
-- 当前版本：`3.19.0-agw.5`。
+- 当前版本：`3.19.0-agw.6`。
 - 上游关系：based on Apache APISIX `3.19.0`。
 - 交付物：`linux/amd64` 的 openEuler 与 Ubuntu 两个最终容器镜像。
 - 不交付：RPM、fpm 中间包、离线镜像 tar、全局 `<版本>` 或 `latest` 标签。

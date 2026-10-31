@@ -285,6 +285,7 @@ jobs:
       - supply-chain-candidate
     if: needs.resolve-images.outputs.reuse_existing != 'true'
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: agw-candidate-digest-*
