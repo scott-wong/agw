@@ -1,0 +1,8 @@
+apisix:
+  node_listen:
+    - port: 9080
+  server_header: 'agw$bad'
+deployment:
+  role: data_plane
+  role_data_plane:
+    config_provider: yaml

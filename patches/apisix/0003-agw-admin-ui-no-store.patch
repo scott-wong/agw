@@ -1,14 +1,37 @@
+diff --git a/apisix/cli/ops.lua b/apisix/cli/ops.lua
+--- a/apisix/cli/ops.lua
++++ b/apisix/cli/ops.lua
+@@ -863,6 +863,16 @@
+     for k,v in pairs(yaml_conf.apisix) do
+         sys_conf[k] = v
++    end
++
++    local agw_server_header = yaml_conf.apisix.server_header
++    if agw_server_header == false then
++        sys_conf["agw_server_header"] = ""
++    elseif type(agw_server_header) == "string" then
++        sys_conf["agw_server_header"] = agw_server_header
++    else
++        sys_conf["agw_server_header"] = "agw"
+     end
++
+     for k,v in pairs(yaml_conf.nginx_config) do
+         sys_conf[k] = v
+     end
 diff --git a/apisix/cli/ngx_tpl.lua b/apisix/cli/ngx_tpl.lua
-index 8fc5d19..47f7e7f 100644
 --- a/apisix/cli/ngx_tpl.lua
 +++ b/apisix/cli/ngx_tpl.lua
-@@ -807,8 +807,8 @@ http {
-             root {* apisix_lua_home *}/ui;
+@@ -807,8 +807,13 @@
              try_files $uri /index.html =404;
              gzip on;
              gzip_types text/css application/javascript application/json;
 -            expires 7200s;
 -            add_header Cache-Control "private,max-age=7200";
++            {% if agw_server_header == "" then %}
++            more_clear_headers Server;
++            {% else %}
++            more_set_headers "Server: {* agw_server_header *}";
++            {% end %}
 +            expires off;
 +            add_header Cache-Control "no-store";
          }

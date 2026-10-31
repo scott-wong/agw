@@ -104,7 +104,12 @@ docker run --rm \
     test "$count" -eq "$EXPECTED_COUNT"
   '
 
-for invalid in server-header-invalid-empty.yaml server-header-invalid-control.yaml server-header-invalid-long.yaml; do
+for invalid in \
+    server-header-invalid-empty.yaml \
+    server-header-invalid-control.yaml \
+    server-header-invalid-long.yaml \
+    server-header-invalid-quote.yaml \
+    server-header-invalid-dollar.yaml; do
   echo "[smoke] reject invalid config: ${invalid}"
   if docker run --rm \
       --entrypoint bash \
