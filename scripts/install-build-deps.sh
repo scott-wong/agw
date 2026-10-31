@@ -12,7 +12,7 @@ case "$DISTRO" in
     dnf -y --setopt=install_weak_deps=False \
       --setopt=max_parallel_downloads=10 install \
       autoconf automake bzip2 ca-certificates cmake curl diffutils findutils \
-      gcc gcc-c++ git libtool make patch perl perl-Digest-SHA perl-IPC-Cmd \
+      gawk gcc gcc-c++ git libtool make patch perl perl-Digest-SHA perl-IPC-Cmd \
       pkgconf pcre-devel pcre2-devel readline-devel openldap-devel libxml2-devel \
       libxslt-devel libyaml-devel zlib-devel unzip wget which xz
     dnf clean all
@@ -23,9 +23,10 @@ case "$DISTRO" in
     apt-get update
     apt-get install -y --no-install-recommends \
       autoconf automake bzip2 build-essential ca-certificates cmake curl \
-      diffutils file findutils git libldap2-dev libreadline-dev libtool \
+      diffutils file findutils gawk git libldap2-dev libreadline-dev libtool \
       libpcre2-dev libpcre3-dev libxml2-dev libxslt1-dev libyaml-dev patch \
       perl pkg-config zlib1g-dev unzip wget xz-utils
+    update-alternatives --set awk /usr/bin/gawk
     apt-get clean
     rm -rf /var/lib/apt/lists/*
     ;;
@@ -37,5 +38,7 @@ esac
 
 command -v gcc
 command -v g++
+command -v gawk
 command -v make
 command -v perl
+gawk --version | sed -n '1p' | grep -q 'GNU Awk'
