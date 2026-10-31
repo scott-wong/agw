@@ -14,7 +14,7 @@ case "$DISTRO" in
       autoconf automake bzip2 ca-certificates cmake curl diffutils findutils \
       gcc gcc-c++ git libtool make patch perl perl-Digest-SHA perl-IPC-Cmd \
       pkgconf pcre-devel pcre2-devel readline-devel openldap-devel libxml2-devel \
-      libxslt-devel libyaml-devel unzip wget which xz
+      libxslt-devel libyaml-devel zlib-devel unzip wget which xz
     dnf clean all
     rm -rf /var/cache/dnf
     ;;
@@ -25,7 +25,7 @@ case "$DISTRO" in
       autoconf automake bzip2 build-essential ca-certificates cmake curl \
       diffutils file findutils git libldap2-dev libreadline-dev libtool \
       libpcre2-dev libpcre3-dev libxml2-dev libxslt1-dev libyaml-dev patch \
-      perl pkg-config unzip wget xz-utils
+      perl pkg-config zlib1g-dev unzip wget xz-utils
     apt-get clean
     rm -rf /var/lib/apt/lists/*
     ;;

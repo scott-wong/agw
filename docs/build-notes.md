@@ -98,6 +98,13 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 `publish.yml` 仍按正式发布契约要求两个 candidate 都通过后再提升；日常构建阶段
 则拆成两个独立流水线，先把单个变体跑通，不因另一个变体失败而阻塞。
 
+## 证据生成
+
+`scripts/gen-evidence.py` 从 `VERSION`、`scripts/baseline.env`、`patches/`、
+`modules/` 与 `build/src/` 生成 `evidence/` 下的当前交付文档和自研比例 JSON。
+修改基线、版本或补丁后执行 `make evidence`；`make verify` 会以只读模式检查生成
+文件是否过期。单次 CI 的 digest、SBOM、SARIF 和扫描输出仍以 Actions artifact 为准。
+
 ## 版本不可变性
 
 `VERSION` 是唯一事实源，当前为 `3.19.0-agw.1`。Git tag 必须是

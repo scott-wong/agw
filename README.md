@@ -152,6 +152,7 @@ make verify-etcd IMAGE=agw:3.19.0-agw.1-openeuler
 | 命令 | 作用 |
 |------|------|
 | `make fetch` | 校验基线并准备 `distfiles/` |
+| `make evidence` | 从版本、基线、补丁和模块事实刷新 `evidence/` |
 | `make build-images` | 分别构建两个最终镜像 |
 | `make verify` | shell、YAML、补丁和 Lua 语法静态检查 |
 | `make verify-images` | 两个镜像的运行时、品牌头、国密冒烟 |

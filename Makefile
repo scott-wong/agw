@@ -8,12 +8,13 @@ VARIANT ?= openeuler
 IMAGE ?= agw:$(FULL_VERSION)-$(VARIANT)
 PLATFORM ?= linux/amd64
 
-.PHONY: help fetch build-image build-images verify-image verify-images \
+.PHONY: help fetch evidence build-image build-images verify-image verify-images \
         verify-etcd verify static clean
 
 help:
 	@echo "AGW $(FULL_VERSION)"
 	@echo "  fetch         校验全部基线并下载/校验源码归档到 distfiles/"
+	@echo "  evidence      根据版本、基线、补丁和模块刷新 evidence/"
 	@echo "  build-image   VARIANT=openeuler|ubuntu IMAGE=<ref> 构建单个最终镜像"
 	@echo "  build-images  顺序构建两个最终镜像"
 	@echo "  verify-image  IMAGE=<ref> VARIANT=<variant> 镜像冒烟（含 Server header/国密）"
@@ -23,6 +24,9 @@ help:
 
 fetch:
 	bash scripts/verify-baseline.sh
+
+evidence:
+	python3 scripts/gen-evidence.py
 
 build-image:
 	test -d distfiles

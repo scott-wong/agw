@@ -7,3 +7,4 @@ output/
 .DS_Store
 output-runtime/
 output-apisix/
+evidence/04-sbom/*.cyclonedx.json

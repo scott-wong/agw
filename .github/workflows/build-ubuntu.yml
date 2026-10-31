@@ -26,7 +26,6 @@ jobs:
       - run: make fetch
       - run: make verify
       - run: bash scripts/verify-debrand.sh
-      - run: bash scripts/gen-self-ratio.sh
       - uses: actions/upload-artifact@v4
         with:
           name: agw-ubuntu-self-developed-ratio
@@ -61,7 +60,7 @@ jobs:
           build-args: |
             AGW_VERSION=${{ steps.ver.outputs.version }}
           cache-from: type=gha,scope=agw-ubuntu
-          cache-to: type=gha,mode=min,scope=agw-ubuntu
+          cache-to: type=gha,mode=max,ignore-error=true,scope=agw-ubuntu
       - name: Image and Server-header smoke
         run: |
           bash scripts/smoke-docker.sh \

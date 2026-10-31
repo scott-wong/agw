@@ -26,7 +26,6 @@ jobs:
       - run: make fetch
       - run: make verify
       - run: bash scripts/verify-debrand.sh
-      - run: bash scripts/gen-self-ratio.sh
       - uses: actions/upload-artifact@v4
         with:
           name: agw-openeuler-self-developed-ratio
