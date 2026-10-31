@@ -19,7 +19,7 @@ AGW 的差异集中在运行时、交付镜像、默认品牌头和少量发行�
 
 ## 交付标签
 
-`VERSION` 当前为 `3.19.0-agw.3`，对应上游 `3.19.0`。每个变体有三个标签：
+`VERSION` 当前为 `3.19.0-agw.4`，对应上游 `3.19.0`。每个变体有三个标签：
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
 |------|------------------|------------|----------|
@@ -29,11 +29,11 @@ AGW 的差异集中在运行时、交付镜像、默认品牌头和少量发行�
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.19.0-agw.3-openeuler
+ghcr.io/scott-wong/agw:3.19.0-agw.4-openeuler
 ghcr.io/scott-wong/agw:3.19.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.19.0-agw.3-ubuntu
+ghcr.io/scott-wong/agw:3.19.0-agw.4-ubuntu
 ghcr.io/scott-wong/agw:3.19.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
@@ -137,6 +137,9 @@ AGW 不对标 OpenSSL 的 CVE 修复状态；发布清单记录
 从同版本官方 APISIX `3.19.0-0` 包中提取并校验 SHA256，AGW 的 OpenResty、
 Tongsuo 与 APISIX 服务端代码仍由本仓独立构建。
 
+Dashboard SVG 详情页会归一化 Admin API 隐藏私钥后缺失的 `keys` 字段，避免带
+`certs` 的 SSL 对象详情页抛出 `Cannot read properties of undefined (reading 'id')`。
+
 ## etcd 与 standalone
 
 默认部署仍为外置 etcd + Admin API：
@@ -168,11 +171,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.3-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.3-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.3-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.3-ubuntu
-make verify-etcd IMAGE=agw:3.19.0-agw.3-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.4-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.4-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.4-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.4-ubuntu
+make verify-etcd IMAGE=agw:3.19.0-agw.4-openeuler
 ```
 
 常用入口：

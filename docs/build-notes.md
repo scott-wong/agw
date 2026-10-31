@@ -115,5 +115,5 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 
 ## 版本不可变性
 
-`VERSION` 是唯一事实源，当前为 `3.19.0-agw.3`。Git tag 必须是
+`VERSION` 是唯一事实源，当前为 `3.19.0-agw.4`。Git tag 必须是
 `v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。

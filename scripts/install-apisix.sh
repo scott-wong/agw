@@ -109,6 +109,16 @@ grep -q '"gm",' "$APISIX_PREFIX/apisix/cli/config.lua"
 grep -q 'local ver_header = "agw"' "$APISIX_PREFIX/apisix/init.lua"
 grep -q 'set_standard_pem_ssl_key' "$APISIX_PREFIX/apisix/plugins/gm.lua"
 
+# APISIX Admin API intentionally omits private keys from SSL GET responses.
+# The pinned Dashboard detail form indexes `keys` by `certs` index and crashes
+# when `keys` is absent. Normalize it to an empty-string array for display.
+ui_ssl_schema="$APISIX_PREFIX/ui/assets/schema-Cj04qC-8.js"
+test -f "$ui_ssl_schema"
+old='U=s=>$(s,t=>{t.__clientEnabled=w(t.client)});'
+new='U=s=>$(s,t=>{t.__clientEnabled=w(t.client),t.keys=Array.isArray(t.keys)?t.keys:(t.certs||[]).map(()=>"")});'
+OLD="$old" NEW="$new" perl -0pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$ui_ssl_schema"
+grep -Fq 't.keys=Array.isArray(t.keys)?t.keys:(t.certs||[]).map' "$ui_ssl_schema"
+
 # Native rocks carry an RPATH to Tongsuo. Keep Tongsuo out of the global
 # loader path so LuaRocks can invoke the distro's git/curl without ABI clashes.
 env -u LD_LIBRARY_PATH /usr/local/bin/apisix version

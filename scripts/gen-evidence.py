@@ -367,6 +367,7 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 - Admin UI 入口与 JavaScript/CSS/SVG 静态资源已打包；`/ui/`、静态资源和 SPA
   fallback 可通过 Admin API 端口访问。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
+- Dashboard SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
 - 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
 - TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。
 - Server Header 冒烟在容器内规范化夹具权限，并拒绝 worker 初始化错误。
