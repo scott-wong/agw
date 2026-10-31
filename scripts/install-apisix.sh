@@ -110,14 +110,23 @@ grep -q 'local ver_header = "agw"' "$APISIX_PREFIX/apisix/init.lua"
 grep -q 'set_standard_pem_ssl_key' "$APISIX_PREFIX/apisix/plugins/gm.lua"
 
 # APISIX Admin API intentionally omits private keys from SSL GET responses.
-# The pinned Admin UI detail form indexes `keys` by `certs` index and crashes
-# when `keys` is absent. Normalize it to an empty-string array for display.
+# The pinned Admin UI indexes the hidden `keys` field array by the `certs`
+# index. React Hook Form drops empty-string array entries, so normalizing the
+# data alone is insufficient: use the certificate field id as a React key
+# fallback when the corresponding key field is absent.
 ui_ssl_schema="$APISIX_PREFIX/ui/assets/schema-Cj04qC-8.js"
 test -f "$ui_ssl_schema"
 old='U=s=>$(s,t=>{t.__clientEnabled=w(t.client)});'
 new='U=s=>$(s,t=>{t.__clientEnabled=w(t.client),t.keys=Array.isArray(t.keys)?t.keys:(t.certs||[]).map(()=>"")});'
 OLD="$old" NEW="$new" perl -0pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$ui_ssl_schema"
 grep -Fq 't.keys=Array.isArray(t.keys)?t.keys:(t.certs||[]).map' "$ui_ssl_schema"
+
+old_key='o.fields[r].id'
+new_key='o.fields[r]?.id??`key-${d.id}`'
+KEY_OLD="$old_key" KEY_NEW="$new_key" \
+  perl -0pi -e 's/\Q$ENV{KEY_OLD}\E/$ENV{KEY_NEW}/g' "$ui_ssl_schema"
+! grep -Fq "$old_key" "$ui_ssl_schema"
+grep -Fq "$new_key" "$ui_ssl_schema"
 
 # Native rocks carry an RPATH to Tongsuo. Keep Tongsuo out of the global
 # loader path so LuaRocks can invoke the distro's git/curl without ABI clashes.

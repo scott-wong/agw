@@ -1,0 +1,16 @@
+diff --git a/apisix/cli/ngx_tpl.lua b/apisix/cli/ngx_tpl.lua
+index 8fc5d19..47f7e7f 100644
+--- a/apisix/cli/ngx_tpl.lua
++++ b/apisix/cli/ngx_tpl.lua
+@@ -807,8 +807,8 @@ http {
+             root {* apisix_lua_home *}/ui;
+             try_files $uri /index.html =404;
+             gzip on;
+             gzip_types text/css application/javascript application/json;
+-            expires 7200s;
+-            add_header Cache-Control "private,max-age=7200";
++            expires off;
++            add_header Cache-Control "no-store";
+         }
+         {% end %}
+     }

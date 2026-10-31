@@ -65,6 +65,8 @@ test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.css' -print -quit)"
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.svg' -print -quit)"
 grep -q 't.keys=Array.isArray(t.keys)' \
   /usr/local/apisix/ui/assets/schema-Cj04qC-8.js
+grep -Fq 'o.fields[r]?.id??`key-${d.id}`' \
+  /usr/local/apisix/ui/assets/schema-Cj04qC-8.js
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"
 bash "$SMOKE_DIR/gm-ntls-handshake.sh" "$OPENSSL"

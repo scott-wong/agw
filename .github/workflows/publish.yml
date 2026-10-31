@@ -12,6 +12,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: agw-publish
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Validate immutable release tag
@@ -65,28 +69,29 @@ jobs:
           REPO: ${{ needs.validate.outputs.repo }}
         run: |
           set -euo pipefail
-          TAGS=(
-            "${VERSION}-openeuler" "${UPSTREAM}-openeuler" "latest-openeuler"
-            "${VERSION}-ubuntu" "${UPSTREAM}-ubuntu" "latest-ubuntu"
-          )
-          ALL_EXIST=true
-          ANY_EXIST=false
-          for tag in "${TAGS[@]}"; do
-            if crane digest "${REPO}:${tag}" >/dev/null 2>&1; then
-              ANY_EXIST=true
-            else
-              ALL_EXIST=false
-            fi
-          done
+          OPENEULER_EXISTS=false
+          UBUNTU_EXISTS=false
+          if crane digest "${REPO}:${VERSION}-openeuler" >/dev/null 2>&1; then
+            OPENEULER_EXISTS=true
+          fi
+          if crane digest "${REPO}:${VERSION}-ubuntu" >/dev/null 2>&1; then
+            UBUNTU_EXISTS=true
+          fi
 
-          if [ "$ALL_EXIST" = true ]; then
+          if [ "$OPENEULER_EXISTS" = true ] && [ "$UBUNTU_EXISTS" = true ]; then
             OPENEULER_DIGEST="$(crane digest "${REPO}:${VERSION}-openeuler")"
             UBUNTU_DIGEST="$(crane digest "${REPO}:${VERSION}-ubuntu")"
             for tag in "${UPSTREAM}-openeuler" "latest-openeuler"; do
-              test "$(crane digest "${REPO}:${tag}")" = "$OPENEULER_DIGEST"
+              if ! test "$(crane digest "${REPO}:${tag}")" = "$OPENEULER_DIGEST"; then
+                echo "ERROR: 不可变版本标签已存在，但别名 ${tag} 未指向同一 digest" >&2
+                exit 1
+              fi
             done
             for tag in "${UPSTREAM}-ubuntu" "latest-ubuntu"; do
-              test "$(crane digest "${REPO}:${tag}")" = "$UBUNTU_DIGEST"
+              if ! test "$(crane digest "${REPO}:${tag}")" = "$UBUNTU_DIGEST"; then
+                echo "ERROR: 不可变版本标签已存在，但别名 ${tag} 未指向同一 digest" >&2
+                exit 1
+              fi
             done
             python3 - "$OPENEULER_DIGEST" "$UBUNTU_DIGEST" > final-digests.json <<'PY'
           import json
@@ -95,11 +100,11 @@ jobs:
           PY
             echo "reuse_existing=true" >> "$GITHUB_OUTPUT"
             echo "已检测到两个变体的完整正式标签，复用现有 digest。"
-          elif [ "$ANY_EXIST" = false ]; then
+          elif [ "$OPENEULER_EXISTS" = false ] && [ "$UBUNTU_EXISTS" = false ]; then
             echo "reuse_existing=false" >> "$GITHUB_OUTPUT"
-            echo "未检测到正式标签，执行标准 candidate -> promote 流程。"
+            echo "未检测到不可变版本标签，执行标准 candidate -> promote 流程。"
           else
-            echo "ERROR: 正式标签只存在一部分，拒绝自动复用或覆盖" >&2
+            echo "ERROR: 不可变版本标签只存在一部分，拒绝自动复用或覆盖" >&2
             exit 1
           fi
       - uses: actions/upload-artifact@v4
@@ -303,13 +308,13 @@ jobs:
           [[ "$OPENEULER_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           [[ "$UBUNTU_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
 
-          FINAL_TAGS=(
-            "${VERSION}-openeuler" "${UPSTREAM}-openeuler" "latest-openeuler"
-            "${VERSION}-ubuntu" "${UPSTREAM}-ubuntu" "latest-ubuntu"
+          IMMUTABLE_TAGS=(
+            "${VERSION}-openeuler"
+            "${VERSION}-ubuntu"
           )
-          for tag in "${FINAL_TAGS[@]}"; do
+          for tag in "${IMMUTABLE_TAGS[@]}"; do
             if crane digest "${REPO}:${tag}" >/dev/null 2>&1; then
-              echo "ERROR: 发布标签已存在，拒绝移动: ${REPO}:${tag}" >&2
+              echo "ERROR: 不可变版本标签已存在，拒绝移动: ${REPO}:${tag}" >&2
               exit 1
             fi
           done
