@@ -7,6 +7,12 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Push the gated openEuler image to GHCR
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -37,6 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     needs: checks
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - name: Read version
@@ -145,3 +154,62 @@ jobs:
             artifacts/openEuler-security-evidence.txt
           retention-days: 30
           if-no-files-found: warn
+      - name: Log in to GHCR
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish openEuler image
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          GHCR_REPO: ghcr.io/scott-wong/agw
+        run: |
+          set -euo pipefail
+          UPSTREAM="${VERSION%%-*}"
+          SOURCE="agw:${VERSION}-openeuler-ci"
+          TAGS=(
+            "${VERSION}-openeuler"
+            "${UPSTREAM}-openeuler"
+            "latest-openeuler"
+          )
+
+          for tag in "${TAGS[@]}"; do
+            REF="${GHCR_REPO}:${tag}"
+            if docker buildx imagetools inspect "$REF" >/dev/null 2>&1; then
+              echo "ERROR: 发布标签已存在，拒绝移动: ${REF}" >&2
+              exit 1
+            fi
+          done
+
+          mkdir -p artifacts
+          : > artifacts/publish-openeuler.txt
+          for tag in "${TAGS[@]}"; do
+            REF="${GHCR_REPO}:${tag}"
+            docker tag "$SOURCE" "$REF"
+            docker push "$REF" | tee -a artifacts/publish-openeuler.txt
+          done
+
+          IMMUTABLE_REF="${GHCR_REPO}:${VERSION}-openeuler"
+          DIGEST="$(docker buildx imagetools inspect "$IMMUTABLE_REF" \
+            --format '{{json .Manifest.Digest}}' | tr -d '"')"
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "digest=${DIGEST}" >> artifacts/publish-openeuler.txt
+          {
+            echo "### openEuler image published"
+            echo
+            echo "| tag | digest |"
+            echo "|---|---|"
+            for tag in "${TAGS[@]}"; do
+              echo "| \`${GHCR_REPO}:${tag}\` | \`${DIGEST}\` |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+        with:
+          name: agw-openeuler-publish
+          path: artifacts/publish-openeuler.txt
+          retention-days: 30
+          if-no-files-found: error
