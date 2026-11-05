@@ -1,0 +1,104 @@
+services:
+  etcd:
+    image: ${ETCD_IMAGE:?ETCD_IMAGE is required}
+    container_name: agw-single-etcd
+    restart: always
+    network_mode: host
+    volumes:
+      - ./etcd_data:/etcd-data
+    command:
+      - /usr/local/bin/etcd
+      - --data-dir=/etcd-data/data
+      - --name=agw-single-etcd
+      - --advertise-client-urls=http://127.0.0.1:2379
+      - --listen-client-urls=http://127.0.0.1:2379
+      - --listen-peer-urls=http://127.0.0.1:2380
+      - --initial-advertise-peer-urls=http://127.0.0.1:2380
+      - --initial-cluster=agw-single-etcd=http://127.0.0.1:2380
+      - --initial-cluster-token=agw-cluster
+      - --initial-cluster-state=new
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/etcdctl
+        - --endpoints=http://127.0.0.1:2379
+        - --user=root:${ETCD_ROOT_PASSWORD:?ETCD_ROOT_PASSWORD is required}
+        - endpoint
+        - health
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  etcd-init:
+    build:
+      context: ../etcd-init
+      args:
+        ETCD_IMAGE: ${ETCD_IMAGE:?ETCD_IMAGE is required}
+    container_name: agw-single-etcd-init
+    network_mode: host
+    restart: "no"
+    environment:
+      ETCD_ROOT_PASSWORD: ${ETCD_ROOT_PASSWORD:?ETCD_ROOT_PASSWORD is required}
+    depends_on:
+      etcd:
+        condition: service_started
+    command:
+      - |
+        set -eu
+        endpoint="http://127.0.0.1:2379"
+        etcdctl=/usr/local/bin/etcdctl
+
+        tries=0
+        until "$$etcdctl" --endpoints="$$endpoint" endpoint health >/dev/null 2>&1 || \
+              "$$etcdctl" --endpoints="$$endpoint" --user="root:$${ETCD_ROOT_PASSWORD}" endpoint health >/dev/null 2>&1; do
+          tries=$((tries + 1))
+          if [ "$$tries" -ge 60 ]; then
+            echo "etcd did not become reachable within 60 seconds" >&2
+            exit 1
+          fi
+          sleep 1
+        done
+
+        if "$$etcdctl" --endpoints="$$endpoint" endpoint health >/dev/null 2>&1; then
+          if ! "$$etcdctl" --endpoints="$$endpoint" user get root >/dev/null 2>&1; then
+            "$$etcdctl" --endpoints="$$endpoint" user add "root:$${ETCD_ROOT_PASSWORD}" --interactive=false
+          fi
+          "$$etcdctl" --endpoints="$$endpoint" user grant-role root root
+          "$$etcdctl" --endpoints="$$endpoint" auth enable
+        elif "$$etcdctl" --endpoints="$$endpoint" --user="root:$${ETCD_ROOT_PASSWORD}" endpoint health >/dev/null 2>&1; then
+          echo "etcd authentication is already enabled"
+        else
+          echo "etcd is unhealthy or ETCD_ROOT_PASSWORD is incorrect" >&2
+          exit 1
+        fi
+
+  agw:
+    image: ${AGW_IMAGE:?AGW_IMAGE is required}
+    container_name: agw-single
+    restart: always
+    network_mode: host
+    user: root
+    cap_add:
+      - NET_BIND_SERVICE
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - AGW_ADMIN_KEY=${AGW_ADMIN_KEY:?AGW_ADMIN_KEY is required}
+      - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD:?ETCD_ROOT_PASSWORD is required}
+      - AGW_HTTP_PORT=${AGW_HTTP_PORT:?AGW_HTTP_PORT is required}
+      - AGW_HTTPS_PORT=${AGW_HTTPS_PORT:?AGW_HTTPS_PORT is required}
+    volumes:
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+      - /usr/share/zoneinfo/Asia/Shanghai:/usr/share/zoneinfo/Asia/Shanghai:ro
+      - ./agw_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./site:/site
+    depends_on:
+      etcd:
+        condition: service_started
+      etcd-init:
+        condition: service_completed_successfully

@@ -1,0 +1,6 @@
+services:
+  agw:
+    volumes:
+      - ./agw_conf/config.waf.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./site:/site
+      - ../wasm/waf.wasm:/usr/local/apisix/conf/waf.wasm:ro

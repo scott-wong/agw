@@ -1,20 +1,18 @@
 # AGW
 
-AGW 是一个独立开放的 API 网关发行版，基于 [Apache APISIX](https://github.com/apache/apisix)。
-当前版本线基于 APISIX `3.19.0`，使用[Tongsuo（铜锁）](https://github.com/Tongsuo-Project/Tongsuo) 构建，
-只交付两个 `linux/amd64` 容器镜像：
+AGW 是一个独立开放的 API 网关发行版，基于 [Apache APISIX](https://github.com/apache/apisix)，使用[Tongsuo（铜锁）](https://github.com/Tongsuo-Project/Tongsuo) 构建，
+当前只交付两个 `linux/amd64` 容器镜像：
 
 - `ghcr.io/scott-wong/agw:<版本>-openeuler`
 - `ghcr.io/scott-wong/agw:<版本>-ubuntu`
 
-不交付 RPM、fpm 中间包、离线镜像 tar，也不提供全局 `<版本>` / `latest` 标签。
 两个部署变体分别使用：
 
 - openEuler `24.03-lts-sp4`
 - Ubuntu `24.04`
 
 上游关系表述固定为 **based on Apache APISIX**。路由、插件和协议行为沿用上游；
-AGW 的差异集中在运行时、交付镜像、默认品牌头和少量发行配置。
+AGW 的差异集中在运行时、交付镜像和少量发行配置。
 
 ## 交付标签
 
@@ -198,6 +196,16 @@ make verify-etcd IMAGE=agw:3.19.0-agw.7-openeuler
 | `make verify-images` | 两个镜像的运行时、品牌头、普通 TLS/TLCP 双栈冒烟 |
 | `make verify-etcd` | 外置 etcd 与 Admin API 冒烟 |
 | `make clean` | 清理 `build/`、`distfiles/` 等本地产物 |
+
+## 示例部署
+
+`examples/docker/` 提供 `agw-single` 和 `agw-ha` 两套 Docker Compose 示例。
+etcd root 用户和认证启用由一次性 `etcd-init` Compose 服务完成，不依赖
+`init-etcd.sh`。可选 WAF 使用 `waf.wasm`：
+
+- [示例说明](examples/docker/README.md)
+- [单节点示例](examples/docker/agw-single/docker-compose.yml)
+- [三节点示例](examples/docker/agw-ha/docker-compose.yml)
 
 ## CI 与发布
 

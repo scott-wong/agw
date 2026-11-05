@@ -267,7 +267,7 @@ index de2767a..4c0417d 100644
    "apisix": {
 -    "dashboard": "APISIX Dashboard",
 -    "logo": "APISIX Logo"
-+    "dashboard": "AGW Dashboard"
++    "dashboard": "AGW 控制台"
    },
    "consumerGroups": {
      "singular": "消费者组"
