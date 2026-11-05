@@ -324,7 +324,9 @@ openEuler GPG 校验。GitHub Actions 使用 GHA BuildKit 缓存保存已验证�
 ## 阻断项
 
 - Trivy `{env['TRIVY_VERSION']}` 是唯一阻断式漏洞与 secret 扫描器。
-- 级别固定为 `HIGH,CRITICAL`，命中即失败。
+- 级别固定为 `HIGH,CRITICAL`；有修复版本的漏洞和任何 secret 命中会失败。
+- `--ignore-unfixed` 只豁免尚无上游修复版本的漏洞；这些条目的完整文本报告仍上传到
+  artifact，必须按发行版安全公告跟踪，不能声称漏洞已清零。
 - 仅跳过两个上游公开占位文件：
   - `/usr/local/apisix/conf/cert/ssl_PLACE_HOLDER.key`
   - `lua-resty-rsa` rock 的 `.pod` 文档示例密钥
@@ -392,7 +394,7 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 ## 供应链
 
 - Syft 生成 CycloneDX JSON。
-- Trivy 执行阻断式 HIGH/CRITICAL 漏洞与 secret 扫描。
+- Trivy 执行阻断式 HIGH/CRITICAL 漏洞与 secret 扫描；无修复版本漏洞只进入证据报告。
 - openEuler 额外采集非阻断 `dnf updateinfo --security`。
 """
 

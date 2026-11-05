@@ -210,7 +210,9 @@ make verify-etcd IMAGE=agw:3.19.0-agw.7-openeuler
   全部通过后，以精确 digest 提升最终标签，再回拉最终标签复验并创建 Release。
 
 Trivy `v0.76.1` 是唯一阻断扫描器，阻断级别为 `HIGH,CRITICAL`，同时启用 secret
-扫描。Syft 只负责生成 CycloneDX SBOM，因为 Trivy 不能完整编目 LuaRocks。
+扫描。只有已有上游修复版本的漏洞和 secret 命中会阻断；无修复版本漏洞仍进入完整
+文本报告并需按发行版公告跟踪，不能视为已清零。Syft 只负责生成 CycloneDX SBOM，
+因为 Trivy 不能完整编目 LuaRocks。
 Trivy 当前仍不提供 openEuler OS RPM 漏洞库覆盖；`dnf updateinfo --security`
 只作为非阻断证据，不声称等同 Ubuntu 覆盖。
 

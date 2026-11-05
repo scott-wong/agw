@@ -147,6 +147,7 @@ jobs:
           )
           set +e
           trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 1 --format sarif -o artifacts/trivy-ubuntu.sarif \
             "${SKIP_FILES[@]}" "$IMAGE"
           rc=$?

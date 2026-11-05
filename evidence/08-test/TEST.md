@@ -30,5 +30,5 @@
 ## 供应链
 
 - Syft 生成 CycloneDX JSON。
-- Trivy 执行阻断式 HIGH/CRITICAL 漏洞与 secret 扫描。
+- Trivy 执行阻断式 HIGH/CRITICAL 漏洞与 secret 扫描；无修复版本漏洞只进入证据报告。
 - openEuler 额外采集非阻断 `dnf updateinfo --security`。

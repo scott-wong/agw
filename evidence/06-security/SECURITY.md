@@ -4,7 +4,9 @@
 ## 阻断项
 
 - Trivy `v0.76.1` 是唯一阻断式漏洞与 secret 扫描器。
-- 级别固定为 `HIGH,CRITICAL`，命中即失败。
+- 级别固定为 `HIGH,CRITICAL`；有修复版本的漏洞和任何 secret 命中会失败。
+- `--ignore-unfixed` 只豁免尚无上游修复版本的漏洞；这些条目的完整文本报告仍上传到
+  artifact，必须按发行版安全公告跟踪，不能声称漏洞已清零。
 - 仅跳过两个上游公开占位文件：
   - `/usr/local/apisix/conf/cert/ssl_PLACE_HOLDER.key`
   - `lua-resty-rsa` rock 的 `.pod` 文档示例密钥

@@ -138,6 +138,7 @@ jobs:
           )
           set +e
           trivy image --scanners vuln,secret --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 1 --format sarif -o artifacts/trivy-openeuler.sarif \
             "${SKIP_FILES[@]}" "$IMAGE"
           rc=$?

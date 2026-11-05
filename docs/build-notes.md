@@ -108,7 +108,8 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 - Playwright：Ubuntu 候选/最终镜像启动真实浏览器，校验标题、品牌、菜单、路由和
   SSL 详情页；该门禁阻断发布；
 - Syft：两个变体各自生成 CycloneDX SBOM；
-- Trivy：唯一阻断扫描器，`HIGH,CRITICAL` + secret；
+- Trivy：唯一阻断扫描器，`HIGH,CRITICAL` + secret；无上游修复版本的漏洞只进入
+  完整文本报告，不阻断；
 - openEuler 的 `dnf updateinfo --security`：仅非阻断证据。
 
 `publish.yml` 仍按正式发布契约要求两个 candidate 都通过后再提升；日常构建阶段
