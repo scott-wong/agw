@@ -37,13 +37,29 @@ check_tag_commit() {
 
 download_verify() {
   local url="$1" output="$2" want="$3" got
-  if [ ! -f "$output" ]; then
-    echo "[baseline] 下载 $(basename "$output")"
-    curl -fL --retry 3 --retry-delay 2 -o "$output.tmp" "$url"
-    mv "$output.tmp" "$output"
+  if [ -f "$output" ]; then
+    got="$(sha256_of "$output")"
+    if [ "$got" = "$want" ]; then
+      echo "[baseline] $(basename "$output") SHA256 OK"
+      return 0
+    fi
+    echo "[baseline] $(basename "$output") 缓存哈希不匹配，重新下载" >&2
   fi
-  got="$(sha256_of "$output")"
-  [ "$got" = "$want" ] || fail "$(basename "$output") SHA256: 期望 ${want}，实际 ${got}"
+
+  echo "[baseline] 下载 $(basename "$output")"
+  if ! curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 180 \
+    -o "$output.tmp" "$url"; then
+    rm -f "$output.tmp"
+    echo "错误: 下载 $(basename "$output") 失败: $url" >&2
+    return 1
+  fi
+  got="$(sha256_of "$output.tmp")"
+  if [ "$got" != "$want" ]; then
+    rm -f "$output.tmp"
+    echo "错误: $(basename "$output") SHA256: 期望 ${want}，实际 ${got}" >&2
+    return 1
+  fi
+  mv "$output.tmp" "$output"
   echo "[baseline] $(basename "$output") SHA256 OK"
 }
 
@@ -108,7 +124,8 @@ download_verify "$APISIX_SOURCE_URL" "$DISTFILES/apisix-${APISIX_TAG}.tar.gz" "$
 download_verify "$OPENRESTY_SOURCE_URL" "$DISTFILES/openresty-${OPENRESTY_VERSION}.tar.gz" "$OPENRESTY_SHA256"
 download_verify "$TONGSHUO_SOURCE_URL" "$DISTFILES/tongsuo-${TONGSHUO_VERSION}.tar.gz" "$TONGSHUO_SHA256"
 download_verify "$PCRE2_SOURCE_URL" "$DISTFILES/pcre2-${PCRE2_VERSION}.tar.gz" "$PCRE2_SHA256"
-download_verify "$ZLIB_SOURCE_URL" "$DISTFILES/zlib-${ZLIB_VERSION}.tar.gz" "$ZLIB_SHA256"
+download_verify "$ZLIB_SOURCE_URL" "$DISTFILES/zlib-${ZLIB_VERSION}.tar.gz" "$ZLIB_SHA256" \
+  || download_verify "$ZLIB_SOURCE_FALLBACK_URL" "$DISTFILES/zlib-${ZLIB_VERSION}.tar.gz" "$ZLIB_SHA256"
 download_verify "$LUAROCKS_SOURCE_URL" "$DISTFILES/luarocks-${LUAROCKS_VERSION}.tar.gz" "$LUAROCKS_SHA256"
 download_verify "$WASMTIME_C_API_URL" "$DISTFILES/$WASMTIME_C_API_ASSET" "$WASMTIME_C_API_SHA256"
 
