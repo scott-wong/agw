@@ -543,7 +543,7 @@ jobs:
             printf '\n- openEuler 24.03 LTS SP4: %s:%s-openeuler, %s:%s-openeuler, %s:latest-openeuler\n' \
               "$REPO" "$VERSION" "$REPO" "${{ needs.validate.outputs.upstream }}" "$REPO"
             printf '  digest: %s\n' "$OPENEULER_DIGEST"
-            printf '- Ubuntu 24.04: %s:%s-ubuntu, %s:%s-ubuntu, %s:latest-ubuntu\n' \
+            printf -- '- Ubuntu 24.04: %s:%s-ubuntu, %s:%s-ubuntu, %s:latest-ubuntu\n' \
               "$REPO" "$VERSION" "$REPO" "${{ needs.validate.outputs.upstream }}" "$REPO"
             printf '  digest: %s\n\n' "$UBUNTU_DIGEST"
             printf '本版本不交付 RPM、不提供离线镜像 tar。附件包含两个 CycloneDX SBOM 与 release-manifest.json。\n'

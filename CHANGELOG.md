@@ -6,7 +6,7 @@
 
 ## [Unreleased]
 
-## [3.19.0-agw.8] - 2026-11-05
+## [3.19.0-agw.9] - 2026-11-05
 
 ### Added
 - 新增面向发布的 CHANGELOG，并在构建校验和 GitHub Release 流程中检查当前版本条目。
@@ -46,7 +46,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
-[3.19.0-agw.8]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.8
+[3.19.0-agw.9]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.9
 [3.19.0-agw.7]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.7
 [3.19.0-agw.6]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.6
 [3.19.0-agw.1]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.1

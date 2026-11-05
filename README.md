@@ -16,7 +16,7 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 
 ## 交付标签
 
-`VERSION` 当前为 `3.19.0-agw.8`，对应上游 `3.19.0`。每个变体有三个标签。
+`VERSION` 当前为 `3.19.0-agw.9`，对应上游 `3.19.0`。每个变体有三个标签。
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
@@ -27,11 +27,11 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.19.0-agw.8-openeuler
+ghcr.io/scott-wong/agw:3.19.0-agw.9-openeuler
 ghcr.io/scott-wong/agw:3.19.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.19.0-agw.8-ubuntu
+ghcr.io/scott-wong/agw:3.19.0-agw.9-ubuntu
 ghcr.io/scott-wong/agw:3.19.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
@@ -179,11 +179,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.8-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.8-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.8-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.8-ubuntu
-make verify-etcd IMAGE=agw:3.19.0-agw.8-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.9-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.9-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.9-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.9-ubuntu
+make verify-etcd IMAGE=agw:3.19.0-agw.9-openeuler
 ```
 
 常用入口：
