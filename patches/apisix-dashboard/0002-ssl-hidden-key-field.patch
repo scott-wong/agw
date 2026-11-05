@@ -1,0 +1,13 @@
+diff --git a/src/components/form-slice/FormPartSSL/FormItemCertKeyList.tsx b/src/components/form-slice/FormPartSSL/FormItemCertKeyList.tsx
+index ac087a6..5b98b03 100644
+--- a/src/components/form-slice/FormPartSSL/FormItemCertKeyList.tsx
++++ b/src/components/form-slice/FormPartSSL/FormItemCertKeyList.tsx
+@@ -98,7 +98,7 @@ const CertKeyPairList = () => {
+             label={`${t('form.ssls.cert')} ${idx + 2}`}
+           />
+           <FormItemTextareaWithUpload
+-            key={keys.fields[idx].id}
++            key={keys.fields[idx]?.id ?? `key-${cert.id}`}
+             name={`keys.${idx}`}
+             label={`${t('form.ssls.key')} ${idx + 2}`}
+             placeholder={t('form.ssls.keyHidden')}

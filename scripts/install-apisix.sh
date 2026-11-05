@@ -13,7 +13,6 @@ OR_PREFIX="${OR_PREFIX:-/usr/local/openresty}"
 APISIX_PREFIX="${APISIX_PREFIX:-/usr/local/apisix}"
 WORK="${WORK:-/tmp/agw-apisix-build}"
 PATCH_DIR="$SCRIPT_DIR/../patches/apisix"
-UI_DEB="$DISTFILES/$APISIX_UI_DEB_NAME"
 
 export PATH="/usr/local/bin:$OR_PREFIX/tongsuo/bin:$OR_PREFIX/pcre/bin:$OR_PREFIX/bin:$OR_PREFIX/luajit/bin:$PATH"
 export LUA_PATH="$APISIX_PREFIX/?.lua;$APISIX_PREFIX/?/init.lua;$APISIX_PREFIX/deps/share/lua/5.1/?.lua;$APISIX_PREFIX/deps/share/lua/5.1/?/init.lua;;"
@@ -56,19 +55,6 @@ rm -rf "$APISIX_PREFIX"
 mkdir -p "$APISIX_PREFIX/conf" "$APISIX_PREFIX/logs"
 cp -a "$WORK/deps" "$APISIX_PREFIX/deps"
 
-test -f "$UI_DEB"
-command -v ar >/dev/null
-mkdir -p "$WORK/ui-deb"
-(
-  cd "$WORK/ui-deb"
-  ar x "$UI_DEB" data.tar.gz
-  tar -xzf data.tar.gz ./usr/local/apisix/ui
-)
-install -d "$APISIX_PREFIX/ui"
-cp -a "$WORK/ui-deb/usr/local/apisix/ui/." "$APISIX_PREFIX/ui/"
-test -f "$APISIX_PREFIX/ui/index.html"
-test -n "$(find "$APISIX_PREFIX/ui/assets" -type f -name '*.js' -print -quit)"
-
 target_lua="$APISIX_PREFIX/deps/share/lua/5.1/apisix"
 test -d "$target_lua"
 mv "$target_lua" "$APISIX_PREFIX/apisix"
@@ -103,30 +89,9 @@ ln -sfn "$OR_PREFIX/bin/resty" /usr/local/bin/resty
 test -x /usr/local/bin/apisix
 test -f "$APISIX_PREFIX/apisix/cli/apisix.lua"
 test -f "$APISIX_PREFIX/conf/config.yaml"
-test -f "$APISIX_PREFIX/ui/index.html"
-grep -q '<title>Apache APISIX' "$APISIX_PREFIX/ui/index.html"
 grep -q '"gm",' "$APISIX_PREFIX/apisix/cli/config.lua"
 grep -q 'local ver_header = "agw"' "$APISIX_PREFIX/apisix/init.lua"
 grep -q 'set_standard_pem_ssl_key' "$APISIX_PREFIX/apisix/plugins/gm.lua"
-
-# APISIX Admin API intentionally omits private keys from SSL GET responses.
-# The pinned Admin UI indexes the hidden `keys` field array by the `certs`
-# index. React Hook Form drops empty-string array entries, so normalizing the
-# data alone is insufficient: use the certificate field id as a React key
-# fallback when the corresponding key field is absent.
-ui_ssl_schema="$APISIX_PREFIX/ui/assets/schema-Cj04qC-8.js"
-test -f "$ui_ssl_schema"
-old='U=s=>$(s,t=>{t.__clientEnabled=w(t.client)});'
-new='U=s=>$(s,t=>{t.__clientEnabled=w(t.client),t.keys=Array.isArray(t.keys)?t.keys:(t.certs||[]).map(()=>"")});'
-OLD="$old" NEW="$new" perl -0pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$ui_ssl_schema"
-grep -Fq 't.keys=Array.isArray(t.keys)?t.keys:(t.certs||[]).map' "$ui_ssl_schema"
-
-old_key='o.fields[r].id'
-new_key='o.fields[r]?.id??`key-${d.id}`'
-KEY_OLD="$old_key" KEY_NEW="$new_key" \
-  perl -0pi -e 's/\Q$ENV{KEY_OLD}\E/$ENV{KEY_NEW}/g' "$ui_ssl_schema"
-! grep -Fq "$old_key" "$ui_ssl_schema"
-grep -Fq "$new_key" "$ui_ssl_schema"
 
 # Native rocks carry an RPATH to Tongsuo. Keep Tongsuo out of the global
 # loader path so LuaRocks can invoke the distro's git/curl without ABI clashes.

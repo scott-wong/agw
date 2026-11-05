@@ -9,6 +9,35 @@
 
 ARG OPENEULER_BASE=quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e
 ARG UBUNTU_BASE=ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
+ARG NODE_BASE=node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
+
+# ---------------------------------------------------------------------------
+# Admin UI builder
+# ---------------------------------------------------------------------------
+FROM ${NODE_BASE} AS dashboard-builder
+
+ARG DASHBOARD_SHA
+ARG DASHBOARD_SOURCE_SHA256
+ARG NPM_REGISTRY=
+
+WORKDIR /opt/agw
+RUN apk add --no-cache bash ca-certificates coreutils git patch python3
+
+COPY scripts/baseline.env scripts/build-apisix-dashboard.sh /opt/agw/scripts/
+COPY distfiles/apisix-dashboard-*.tar.gz distfiles/apisix-dashboard-*.json /opt/agw/distfiles/
+COPY patches/apisix-dashboard/ /opt/agw/patches/apisix-dashboard/
+
+RUN --mount=type=cache,target=/root/.cache/node/corepack \
+    --mount=type=cache,target=/root/.local/share/pnpm/store \
+    test -n "$DASHBOARD_SHA" \
+    && test -n "$DASHBOARD_SOURCE_SHA256" \
+    && DISTFILES=/opt/agw/distfiles \
+       PATCH_DIR=/opt/agw/patches/apisix-dashboard \
+       OUTPUT=/opt/agw/ui-dist \
+       PROVENANCE_OUTPUT=/opt/agw/dashboard-provenance.json \
+       NPM_REGISTRY="$NPM_REGISTRY" \
+       bash /opt/agw/scripts/build-apisix-dashboard.sh \
+    && rm -rf /tmp/agw-dashboard-build
 
 # ---------------------------------------------------------------------------
 # openEuler builder
@@ -67,7 +96,9 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.19.0-agw.4
+ARG AGW_VERSION=3.19.0-agw.7
+ARG DASHBOARD_SHA
+ARG DASHBOARD_SOURCE_SHA256
 
 LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.description="AGW API gateway, based on Apache APISIX" \
@@ -78,6 +109,8 @@ LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.base.digest="sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e" \
       org.opencontainers.image.vendor="AGW" \
       io.agw.variant="openeuler" \
+      io.agw.dashboard.source.commit="${DASHBOARD_SHA}" \
+      io.agw.dashboard.source.sha256="${DASHBOARD_SOURCE_SHA256}" \
       io.agw.runtime-user="root (inherited)" \
       io.agw.nginx-worker-user="nobody"
 
@@ -95,10 +128,14 @@ COPY --from=openeuler-builder /usr/local/bin/apisix /usr/local/bin/apisix
 COPY --from=openeuler-builder /usr/local/bin/openresty /usr/local/bin/openresty
 COPY --from=openeuler-builder /usr/local/bin/resty /usr/local/bin/resty
 COPY --from=openeuler-builder /usr/local/share/agw /usr/local/share/agw
+COPY --from=dashboard-builder /opt/agw/ui-dist /usr/local/apisix/ui
+COPY --from=dashboard-builder /opt/agw/dashboard-provenance.json /usr/local/share/agw/dashboard-source.json
 COPY packaging/docker/agw-entrypoint.sh /usr/local/bin/agw-entrypoint
 
 RUN chmod 0755 /usr/local/bin/agw-entrypoint \
-    && bash /opt/agw/scripts/prepare-image.sh openeuler openeuler "$AGW_VERSION" \
+    && DASHBOARD_SHA="$DASHBOARD_SHA" \
+       DASHBOARD_SOURCE_SHA256="$DASHBOARD_SOURCE_SHA256" \
+       bash /opt/agw/scripts/prepare-image.sh openeuler openeuler "$AGW_VERSION" \
     && rm -rf /opt/agw
 
 EXPOSE 9080 9180 9443
@@ -110,7 +147,9 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.19.0-agw.4
+ARG AGW_VERSION=3.19.0-agw.7
+ARG DASHBOARD_SHA
+ARG DASHBOARD_SOURCE_SHA256
 
 LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.description="AGW API gateway, based on Apache APISIX" \
@@ -121,6 +160,8 @@ LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.base.digest="sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852" \
       org.opencontainers.image.vendor="AGW" \
       io.agw.variant="ubuntu" \
+      io.agw.dashboard.source.commit="${DASHBOARD_SHA}" \
+      io.agw.dashboard.source.sha256="${DASHBOARD_SOURCE_SHA256}" \
       io.agw.runtime-user="root (inherited)" \
       io.agw.nginx-worker-user="nobody"
 
@@ -138,10 +179,14 @@ COPY --from=ubuntu-builder /usr/local/bin/apisix /usr/local/bin/apisix
 COPY --from=ubuntu-builder /usr/local/bin/openresty /usr/local/bin/openresty
 COPY --from=ubuntu-builder /usr/local/bin/resty /usr/local/bin/resty
 COPY --from=ubuntu-builder /usr/local/share/agw /usr/local/share/agw
+COPY --from=dashboard-builder /opt/agw/ui-dist /usr/local/apisix/ui
+COPY --from=dashboard-builder /opt/agw/dashboard-provenance.json /usr/local/share/agw/dashboard-source.json
 COPY packaging/docker/agw-entrypoint.sh /usr/local/bin/agw-entrypoint
 
 RUN chmod 0755 /usr/local/bin/agw-entrypoint \
-    && bash /opt/agw/scripts/prepare-image.sh ubuntu ubuntu "$AGW_VERSION" \
+    && DASHBOARD_SHA="$DASHBOARD_SHA" \
+       DASHBOARD_SOURCE_SHA256="$DASHBOARD_SOURCE_SHA256" \
+       bash /opt/agw/scripts/prepare-image.sh ubuntu ubuntu "$AGW_VERSION" \
     && rm -rf /opt/agw
 
 EXPOSE 9080 9180 9443

@@ -13,12 +13,16 @@ NETWORK="agw-etcd-net-$$"
 ETCD_NAME="agw-etcd-$$"
 AGW_NAME="agw-etcd-gw-$$"
 CONFIG="$ROOT/test/smoke/etcd-config.yaml"
+UI_TMP=""
 
 cleanup() {
   docker logs "$AGW_NAME" > /tmp/agw-etcd-gw.log 2>&1 || true
   docker logs "$ETCD_NAME" > /tmp/agw-etcd.log 2>&1 || true
   docker rm -f "$AGW_NAME" "$ETCD_NAME" >/dev/null 2>&1 || true
   docker network rm "$NETWORK" >/dev/null 2>&1 || true
+  if [ -n "$UI_TMP" ]; then
+    rm -rf "$UI_TMP"
+  fi
 }
 trap cleanup EXIT
 
@@ -84,7 +88,7 @@ grep -Fxq $'HTTP/1.1 200 OK\r' /tmp/agw-ui-headers.txt
 grep -Fxiq $'Cache-Control: no-store\r' /tmp/agw-ui-headers.txt
 test "$(grep -ci '^Server:' /tmp/agw-ui-headers.txt || true)" -eq 1
 grep -Fxq $'Server: agw-etcd\r' /tmp/agw-ui-headers.txt
-grep -q '<title>Apache APISIX' /tmp/agw-ui-index.html
+grep -Fq '<title>AGW Dashboard</title>' /tmp/agw-ui-index.html
 
 asset="$(grep -o 'src="/ui/assets/[^"]*\.js"' /tmp/agw-ui-index.html |
   sed -n '1s|^src="/ui/||;1s|"$||;1p')"
@@ -112,6 +116,24 @@ with open('/tmp/agw-admin-body.json', encoding='utf-8') as handle:
     data = json.load(handle)
 assert data.get('total') == 0, data
 PY
+
+if [ "${UI_SMOKE:-0}" = "1" ]; then
+  echo "[etcd] Admin UI browser smoke"
+  command -v openssl >/dev/null
+  test -d "$ROOT/test/ui/node_modules"
+  UI_TMP="$(mktemp -d)"
+  openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 2 \
+    -subj "/CN=ui-smoke.test" -addext "subjectAltName=DNS:ui-smoke.test" \
+    -keyout "$UI_TMP/key.pem" -out "$UI_TMP/cert.pem" >/dev/null 2>&1
+  (
+    cd "$ROOT/test/ui"
+    AGW_UI_BASE_URL="http://127.0.0.1:19180" \
+      AGW_ADMIN_KEY='agw-smoke-admin-key' \
+      AGW_UI_TEST_CERT="$UI_TMP/cert.pem" \
+      AGW_UI_TEST_KEY="$UI_TMP/key.pem" \
+      npm test
+  )
+fi
 
 curl -sS -D /tmp/agw-data-headers.txt -o /dev/null \
   http://127.0.0.1:19080/no-such-route

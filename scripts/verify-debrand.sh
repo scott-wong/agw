@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # verify-debrand.sh — 去字符 grep 门禁：AGW 是独立开放项目，仓库内不得出现
 # 内部产品/组织/渠道痕迹（众澄 / zc-agw / eunited / codeup / 云效 / ACR），
-# 分发路径与构建配置也不得出现上游未使用的发行形态（dashboard / apisix-base /
-# debian / bookworm）。
+# 分发路径与构建配置也不得出现上游未使用的发行形态（apisix-base / debian /
+# bookworm）。Dashboard 现为正式 UI 源码依赖，因此不再作为禁词。
 #
 # 白名单（Allowlist，非品牌化位置）：
 #   ./LICENSE                     Apache-2.0 原文
@@ -18,10 +18,12 @@ ALLOWED=(
   "./scripts/install-runtime-deps.sh"
 )
 # 禁词：内部痕迹 + 未使用发行形态。`\bacr\b` 用词边界，避免误伤 across 之类单词。
-PATTERN='众澄|\bzc\b|zc[-_]agw|eunited|codeup|云效|aliyuncs|\bacr\b|dashboard|apisix-base|debian|bookworm'
+PATTERN='众澄|\bzc\b|zc[-_]agw|eunited|codeup|云效|aliyuncs|\bacr\b|apisix-base|debian|bookworm'
 
 HITS=$(grep -rniI -E "$PATTERN" \
-  --exclude-dir=.git --exclude-dir=build --exclude-dir=evidence --exclude-dir=distfiles \
+  --exclude-dir=.git --exclude-dir=.idea --exclude-dir=build --exclude-dir=evidence \
+  --exclude-dir=distfiles --exclude-dir=node_modules --exclude-dir=playwright-report \
+  --exclude-dir=test-results \
   --exclude=verify-debrand.sh \
   . || true)
 

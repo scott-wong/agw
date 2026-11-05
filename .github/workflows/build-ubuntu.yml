@@ -19,6 +19,32 @@ permissions:
   packages: read
 
 jobs:
+  dashboard-source:
+    name: Resolve latest Dashboard master
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      source_sha256: ${{ steps.resolve.outputs.source_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve and fetch Dashboard source
+        id: resolve
+        run: |
+          set -euo pipefail
+          sha="$(bash scripts/dashboard-source.sh resolve)"
+          source_sha256="$(bash scripts/dashboard-source.sh fetch "$sha")"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "source_sha256=$source_sha256" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agw-dashboard-source
+          path: |
+            distfiles/apisix-dashboard-${{ steps.resolve.outputs.sha }}.tar.gz
+            distfiles/apisix-dashboard-${{ steps.resolve.outputs.sha }}.json
+          retention-days: 7
+          if-no-files-found: error
+
   checks:
     name: Ubuntu baseline and static checks
     runs-on: ubuntu-latest
@@ -42,7 +68,9 @@ jobs:
     name: Build and gate Ubuntu image
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    needs: checks
+    needs:
+      - checks
+      - dashboard-source
     permissions:
       contents: read
       packages: write
@@ -52,10 +80,16 @@ jobs:
         id: ver
         run: echo "version=$(tr -d ' \n' < VERSION)" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: agw-dashboard-source
+          path: distfiles
       - uses: actions/cache@v4
         with:
           path: distfiles
-          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-${{ needs.dashboard-source.outputs.sha }}
+          restore-keys: |
+            agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-
       - run: make fetch
       - name: Build Ubuntu final image
         uses: docker/build-push-action@v6
@@ -68,6 +102,8 @@ jobs:
           tags: agw:${{ steps.ver.outputs.version }}-ubuntu-ci
           build-args: |
             AGW_VERSION=${{ steps.ver.outputs.version }}
+            DASHBOARD_SHA=${{ needs.dashboard-source.outputs.sha }}
+            DASHBOARD_SOURCE_SHA256=${{ needs.dashboard-source.outputs.source_sha256 }}
           cache-from: type=gha,scope=agw-ubuntu
           cache-to: type=gha,mode=max,ignore-error=true,scope=agw-ubuntu
       - name: Image and Server-header smoke
@@ -76,7 +112,18 @@ jobs:
             "agw:${{ steps.ver.outputs.version }}-ubuntu-ci" \
             ubuntu \
             "${{ steps.ver.outputs.version }}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: test/ui/package-lock.json
+      - name: Install Playwright for Admin UI smoke
+        run: |
+          npm ci --prefix test/ui
+          (cd test/ui && npx playwright install --with-deps chromium)
       - name: External etcd and Admin API smoke
+        env:
+          UI_SMOKE: "1"
         run: |
           bash scripts/smoke-etcd.sh \
             "agw:${{ steps.ver.outputs.version }}-ubuntu-ci"
@@ -115,6 +162,8 @@ jobs:
             echo "version=${{ steps.ver.outputs.version }}"
             echo "variant=ubuntu"
             echo "source_commit=${{ github.sha }}"
+            echo "dashboard_commit=${{ needs.dashboard-source.outputs.sha }}"
+            echo "dashboard_source_sha256=${{ needs.dashboard-source.outputs.source_sha256 }}"
             echo "workflow_run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             docker image inspect "agw:${{ steps.ver.outputs.version }}-ubuntu-ci" \
               --format 'image_id={{.Id}} base_digest={{index .Config.Labels "org.opencontainers.image.base.digest"}}' \

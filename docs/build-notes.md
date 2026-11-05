@@ -2,13 +2,14 @@
 
 ## 总览
 
-`packaging/docker/Dockerfile` 有四个主要 target：
+`packaging/docker/Dockerfile` 有五个主要 target：
 
 ```text
+dashboard-builder   Node 22 Alpine 内从 Dashboard 源码构建 AGW Dashboard
 openeuler-builder   openEuler 24.03 LTS SP4 内编译运行时与 APISIX
 ubuntu-builder      Ubuntu 24.04 内独立编译运行时与 APISIX
-openeuler-final     干净 openEuler 基础镜像 + 对应 builder 的运行时
-ubuntu-final        干净 Ubuntu 基础镜像 + 对应 builder 的运行时
+openeuler-final     干净 openEuler 基础镜像 + 对应运行时 + Dashboard
+ubuntu-final        干净 Ubuntu 基础镜像 + 对应运行时 + Dashboard
 ```
 
 不存在跨发行版复制运行时目录。最终阶段不包含 gcc、g++、make、开发头文件、静态库
@@ -21,15 +22,20 @@ ubuntu-final        干净 Ubuntu 基础镜像 + 对应 builder 的运行时
 1. 用 `git ls-remote` 校验 APISIX、OpenResty、Tongsuo、build-tools、PCRE2 和
    7 个运行时模块的 tag commit。
 2. 下载锁定归档到 `distfiles/`，逐个校验 SHA256。
-3. 校验 openEuler、Ubuntu 与测试 etcd 镜像的 index digest。
+3. 校验 openEuler、Ubuntu、Node UI builder 与测试 etcd 镜像的 index digest。
 4. 把 APISIX 源码解压到 `build/src/`，供静态检查与自研比例统计使用。
 
 Docker 构建只读取已经校验过的 `distfiles/`，不会在 Dockerfile 中执行未校验的
 版本发现。
 
-APISIX 源码发布包不包含已构建的 Admin UI。基线额外固定官方
-`apisix_3.19.0-0_amd64.deb` 的 SHA256；构建时只提取其中的
-`/usr/local/apisix/ui`，不会安装或混用官方包内的运行时。
+APISIX 源码发布包不包含已构建的 Admin UI。每次 workflow 开始时解析一次
+`apache/apisix-dashboard` master HEAD，下载该精确 commit 的源码归档并记录
+SHA256。`dashboard-builder` 在 Node `22-alpine` 中安装 pnpm `12.16.1`，执行
+frozen install、lint、上游单测和生产构建；两个镜像变体共享同一 commit。
+
+AGW 源码补丁把页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
+APISIX Logo/favicon、右上角 Docs 和翻译 CTA，并保留 SSL 详情页对隐藏私钥字段
+的兼容修复。
 
 ## 运行时
 
@@ -57,10 +63,9 @@ APISIX 源码发布包不包含已构建的 Admin UI。基线额外固定官方
 
 1. 解压 APISIX `3.19.0`，按文件名顺序应用 `patches/apisix/*.patch`。
 2. 用 LuaRocks 构建依赖和 APISIX CLI。
-3. 从已校验的官方 APISIX 包中只提取 `/usr/local/apisix/ui`。
-4. 组装 `/usr/local/apisix`、`/usr/local/bin/apisix` 与依赖树。
-5. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
+3. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
    `EVP_ripemd160` 的现实。
+4. 组装 `/usr/local/apisix`、`/usr/local/bin/apisix` 与依赖树。
 
 跟踪补丁做四件事：
 
@@ -80,7 +85,8 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 - 清理 OpenResty 安装产生的头文件、静态库和 pkgconfig；
 - 运行 `apisix init` 与 `openresty -t`；
 - 断言 CLI 默认 `Server` 头为 `agw`，且默认插件表包含 `gm`；
-- 断言 Admin UI 入口、JavaScript/CSS/SVG 静态资源已打包；
+- 从 `dashboard-builder` 复制 UI，并断言 AGW 标题、JavaScript/CSS 静态资源、
+  Dashboard 来源文件存在，且 Logo/favicon、Docs、翻译 CTA 不进入镜像；
 - 把 `logs` 与五个 `*_temp` 目录授予 `65534:65534`，对应 `nobody` worker；
 - 写入镜像来源、运行用户与 Tongsuo CVE 对标状态。
 
@@ -98,7 +104,9 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
   补丁未变化时重复编译 Tongsuo 与 OpenResty；
 - `smoke-docker.sh`：运行时、默认/自定义/关闭 `Server` 头、无重复头、非法值拒绝、
   standalone 模式、SM2 双证书 TLCP 握手、普通 TLS/TLCP 同 SNI 双栈；
-- `smoke-etcd.sh`：外置 etcd、Admin API、数据面；
+- `smoke-etcd.sh`：外置 etcd、Admin API、数据面、Dashboard 静态资源与回退；
+- Playwright：Ubuntu 候选/最终镜像启动真实浏览器，校验标题、品牌、菜单、路由和
+  SSL 详情页；该门禁阻断发布；
 - Syft：两个变体各自生成 CycloneDX SBOM；
 - Trivy：唯一阻断扫描器，`HIGH,CRITICAL` + secret；
 - openEuler 的 `dnf updateinfo --security`：仅非阻断证据。
@@ -115,5 +123,5 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 
 ## 版本不可变性
 
-`VERSION` 是唯一事实源，当前为 `3.19.0-agw.4`。Git tag 必须是
+`VERSION` 是唯一事实源，当前为 `3.19.0-agw.7`。Git tag 必须是
 `v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。

@@ -6,6 +6,8 @@ set -euo pipefail
 DISTRO="${1:?用法: prepare-image.sh <openeuler|ubuntu>}"
 IMAGE_VARIANT="${2:?缺少镜像变体}"
 IMAGE_VERSION="${3:?缺少镜像版本}"
+DASHBOARD_SHA="${DASHBOARD_SHA:?缺少 DASHBOARD_SHA}"
+DASHBOARD_SOURCE_SHA256="${DASHBOARD_SOURCE_SHA256:?缺少 DASHBOARD_SOURCE_SHA256}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -60,8 +62,17 @@ done < <(find /usr/local/openresty /usr/local/apisix -type f \
 
 test -f /usr/local/apisix/conf/nginx.conf
 test -f /usr/local/apisix/ui/index.html
-grep -q '<title>Apache APISIX' /usr/local/apisix/ui/index.html
+grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
+! grep -R -I -q -F 'https://apisix.apache.org/docs/' /usr/local/apisix/ui
+! grep -R -I -q -F 'https://github.com/apache/apisix-dashboard/issues/1407' \
+  /usr/local/apisix/ui
+! grep -R -I -q -F '帮助我们进行翻译' /usr/local/apisix/ui
+! grep -R -I -q -F 'Apache APISIX Dashboard' /usr/local/apisix/ui
+! grep -R -I -q -F 'APISIX Dashboard' /usr/local/apisix/ui
+! grep -R -I -q -F 'Help Us Translate' /usr/local/apisix/ui
+test ! -e /usr/local/apisix/ui/assets/apisix-logo.svg
+test -f /usr/local/share/agw/dashboard-source.json
 grep -q 'local ver_header = "agw"' /usr/local/apisix/apisix/init.lua
 grep -q '^    "gm",$' /usr/local/apisix/apisix/cli/config.lua
 
@@ -79,6 +90,9 @@ cp "$ROOT/LICENSE" /usr/local/share/agw/LICENSE
   echo "variant=$IMAGE_VARIANT"
   echo "baseOs=$DISTRO"
   echo "baseReference=$BASE_REF"
+  echo "dashboardSource=https://github.com/apache/apisix-dashboard"
+  echo "dashboardCommit=$DASHBOARD_SHA"
+  echo "dashboardSourceSha256=$DASHBOARD_SOURCE_SHA256"
   echo "runtimeUser=$RUNTIME_USER (inherited)"
   echo "nginxWorkerUser=$NGINX_WORKER_USER"
   echo "tongsuoCveParity=$TONGSUO_CVE_PARITY"

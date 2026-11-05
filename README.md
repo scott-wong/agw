@@ -1,8 +1,7 @@
 # AGW
 
 AGW 是一个独立开放的 API 网关发行版，基于 [Apache APISIX](https://github.com/apache/apisix)。
-当前版本线基于 APISIX `3.19.0`，使用 OpenResty `1.31.8.1` 与
-[Tongsuo（铜锁）](https://github.com/Tongsuo-Project/Tongsuo) `8.5.0` 构建，
+当前版本线基于 APISIX `3.19.0`，使用[Tongsuo（铜锁）](https://github.com/Tongsuo-Project/Tongsuo) 构建，
 只交付两个 `linux/amd64` 容器镜像：
 
 - `ghcr.io/scott-wong/agw:<版本>-openeuler`
@@ -19,7 +18,7 @@ AGW 的差异集中在运行时、交付镜像、默认品牌头和少量发行�
 
 ## 交付标签
 
-`VERSION` 当前为 `3.19.0-agw.4`，对应上游 `3.19.0`。每个变体有三个标签：
+`VERSION` 当前为 `3.19.0-agw.7`，对应上游 `3.19.0`。每个变体有三个标签：
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
 |------|------------------|------------|----------|
@@ -29,11 +28,11 @@ AGW 的差异集中在运行时、交付镜像、默认品牌头和少量发行�
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.19.0-agw.4-openeuler
+ghcr.io/scott-wong/agw:3.19.0-agw.7-openeuler
 ghcr.io/scott-wong/agw:3.19.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.19.0-agw.4-ubuntu
+ghcr.io/scott-wong/agw:3.19.0-agw.7-ubuntu
 ghcr.io/scott-wong/agw:3.19.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
@@ -50,7 +49,7 @@ SHA256 和基础镜像 digest：
 | 项 | 锁定值 |
 |----|--------|
 | APISIX | `3.19.0` @ `473043623c161966f3f6ef4e8f12d2d8667a12d2` |
-| APISIX Admin UI | `apisix_3.19.0-0_amd64.deb`，固定 SHA256 |
+| APISIX Dashboard | `apache/apisix-dashboard` master，每次构建解析并记录精确 commit 与归档 SHA256 |
 | OpenResty | `1.31.8.1` |
 | Tongsuo | `8.5.0`（OpenSSL 3.5.4 内核，启用 TLCP/NTLS） |
 | API7 runtime 构建口径 | `apisix-runtime/1.4.2` @ `6aaa033823d3b041952a1da6360b5d11ccb99c08` |
@@ -96,6 +95,12 @@ apisix:
 ## 国密与 TLS
 
 运行时动态链接 Tongsuo 的 `libssl.so` / `libcrypto.so`，`gm` 插件加入默认插件表。
+AGW 构建所依据的铜锁密码模块（Linux 版）`8.5.0`（产品型号 `Tongsuo`）已通过
+商用密码产品认证，安全等级为二级（GM/T 0028），证书编号
+`GM013312220260533`，有效期至 `2031-08-25`。可在
+[商用密码认证证书查询](https://www.scctc.org.cn/xxfb/rzyw/rzzscx/jzcxjg/)
+核验。
+
 需要终止 TLCP 流量时，在配置中显式选择国密套件。Tongsuo 在线路上仍报告
 `NTLSv1.1`，对应 GB/T 38636-2020 TLCP：
 
@@ -133,12 +138,16 @@ TLCP 测试客户端，并信任相应 SM2 根证书。
 AGW 不对标 OpenSSL 的 CVE 修复状态；发布清单记录
 `tongsuoCveParity: not-audited`，不宣称两者安全等价。
 
-最终镜像内置 APISIX Admin UI，访问路径为 Admin API 的 `/ui/`。UI 静态文件
-从同版本官方 APISIX `3.19.0-0` 包中提取并校验 SHA256，AGW 的 OpenResty、
-Tongsuo 与 APISIX 服务端代码仍由本仓独立构建。
+最终镜像内置 AGW Dashboard，访问路径为 Admin API 的 `/ui/`。UI 在 Node 22
+builder 中从 `apache/apisix-dashboard` master 的精确 commit 源码构建，执行
+lint、上游单测和生产构建；构建 commit、归档 SHA256 与来源写入镜像标签和
+`/usr/local/share/agw/dashboard-source.json`。页面标题、静态 `<head>` 和动态
+`document.title` 均为 `AGW Dashboard`，Logo/favicon、右上角 Docs 与翻译 CTA
+不进入发布包。
 
-Admin UI 的 SVG 详情页会归一化 Admin API 隐藏私钥后缺失的 `keys` 字段，避免带
-`certs` 的 SSL 对象详情页抛出 `Cannot read properties of undefined (reading 'id')`。
+AGW Dashboard 的 SSL 详情页会归一化 Admin API 隐藏私钥后缺失的 `keys` 字段，
+避免带 `certs` 的 SSL 对象详情页抛出
+`Cannot read properties of undefined (reading 'id')`。
 
 ## etcd 与 standalone
 
@@ -171,11 +180,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.4-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.4-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.4-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.4-ubuntu
-make verify-etcd IMAGE=agw:3.19.0-agw.4-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.7-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.7-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.7-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.7-ubuntu
+make verify-etcd IMAGE=agw:3.19.0-agw.7-openeuler
 ```
 
 常用入口：

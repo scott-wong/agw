@@ -24,6 +24,8 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       upstream: ${{ steps.resolve.outputs.upstream }}
       repo: ${{ steps.resolve.outputs.repo }}
+      dashboard_sha: ${{ steps.dashboard.outputs.sha }}
+      dashboard_source_sha256: ${{ steps.dashboard.outputs.source_sha256 }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve and verify version
@@ -46,6 +48,22 @@ jobs:
           key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
       - run: make fetch
       - run: make verify
+      - name: Resolve latest Dashboard master
+        id: dashboard
+        run: |
+          set -euo pipefail
+          sha="$(bash scripts/dashboard-source.sh resolve)"
+          source_sha256="$(bash scripts/dashboard-source.sh fetch "$sha")"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "source_sha256=$source_sha256" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agw-dashboard-source
+          path: |
+            distfiles/apisix-dashboard-${{ steps.dashboard.outputs.sha }}.tar.gz
+            distfiles/apisix-dashboard-${{ steps.dashboard.outputs.sha }}.json
+          retention-days: 7
+          if-no-files-found: error
 
   resolve-images:
     name: Resolve pre-published release images
@@ -53,6 +71,8 @@ jobs:
     needs: validate
     outputs:
       reuse_existing: ${{ steps.resolve.outputs.reuse_existing }}
+      dashboard_sha: ${{ steps.resolve.outputs.dashboard_sha }}
+      dashboard_source_sha256: ${{ steps.resolve.outputs.dashboard_source_sha256 }}
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/install-security-tools.sh crane
@@ -81,6 +101,18 @@ jobs:
           if [ "$OPENEULER_EXISTS" = true ] && [ "$UBUNTU_EXISTS" = true ]; then
             OPENEULER_DIGEST="$(crane digest "${REPO}:${VERSION}-openeuler")"
             UBUNTU_DIGEST="$(crane digest "${REPO}:${VERSION}-ubuntu")"
+            OPENEULER_DASHBOARD_SHA="$(crane config --platform linux/amd64 "${REPO}:${VERSION}-openeuler" |
+              jq -r '.config.Labels["io.agw.dashboard.source.commit"] // empty')"
+            UBUNTU_DASHBOARD_SHA="$(crane config --platform linux/amd64 "${REPO}:${VERSION}-ubuntu" |
+              jq -r '.config.Labels["io.agw.dashboard.source.commit"] // empty')"
+            OPENEULER_DASHBOARD_SOURCE_SHA256="$(crane config --platform linux/amd64 "${REPO}:${VERSION}-openeuler" |
+              jq -r '.config.Labels["io.agw.dashboard.source.sha256"] // empty')"
+            UBUNTU_DASHBOARD_SOURCE_SHA256="$(crane config --platform linux/amd64 "${REPO}:${VERSION}-ubuntu" |
+              jq -r '.config.Labels["io.agw.dashboard.source.sha256"] // empty')"
+            [[ "$OPENEULER_DASHBOARD_SHA" =~ ^[0-9a-f]{40}$ ]]
+            test "$OPENEULER_DASHBOARD_SHA" = "$UBUNTU_DASHBOARD_SHA"
+            [[ "$OPENEULER_DASHBOARD_SOURCE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+            test "$OPENEULER_DASHBOARD_SOURCE_SHA256" = "$UBUNTU_DASHBOARD_SOURCE_SHA256"
             for tag in "${UPSTREAM}-openeuler" "latest-openeuler"; do
               if ! test "$(crane digest "${REPO}:${tag}")" = "$OPENEULER_DIGEST"; then
                 echo "ERROR: 不可变版本标签已存在，但别名 ${tag} 未指向同一 digest" >&2
@@ -99,6 +131,8 @@ jobs:
           print(json.dumps({"openeuler": sys.argv[1], "ubuntu": sys.argv[2]}, indent=2))
           PY
             echo "reuse_existing=true" >> "$GITHUB_OUTPUT"
+            echo "dashboard_sha=$OPENEULER_DASHBOARD_SHA" >> "$GITHUB_OUTPUT"
+            echo "dashboard_source_sha256=$OPENEULER_DASHBOARD_SOURCE_SHA256" >> "$GITHUB_OUTPUT"
             echo "已检测到两个变体的完整正式标签，复用现有 digest。"
           elif [ "$OPENEULER_EXISTS" = false ] && [ "$UBUNTU_EXISTS" = false ]; then
             echo "reuse_existing=false" >> "$GITHUB_OUTPUT"
@@ -132,10 +166,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - uses: actions/download-artifact@v4
+        with:
+          name: agw-dashboard-source
+          path: distfiles
       - uses: actions/cache@v4
         with:
           path: distfiles
-          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+          key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-${{ needs.validate.outputs.dashboard_sha }}
+          restore-keys: |
+            agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-
       - run: make fetch
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -157,6 +197,8 @@ jobs:
           tags: ${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate
           build-args: |
             AGW_VERSION=${{ needs.validate.outputs.version }}
+            DASHBOARD_SHA=${{ needs.validate.outputs.dashboard_sha }}
+            DASHBOARD_SOURCE_SHA256=${{ needs.validate.outputs.dashboard_source_sha256 }}
           cache-from: type=gha,scope=agw-${{ matrix.variant }}
           cache-to: type=gha,mode=min,scope=agw-${{ matrix.variant }}
       - name: Record candidate digest
@@ -202,7 +244,20 @@ jobs:
             "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate" \
             "${{ matrix.variant }}" \
             "${{ needs.validate.outputs.version }}"
+      - uses: actions/setup-node@v4
+        if: matrix.variant == 'ubuntu'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: test/ui/package-lock.json
+      - name: Install Playwright for Admin UI smoke
+        if: matrix.variant == 'ubuntu'
+        run: |
+          npm ci --prefix test/ui
+          (cd test/ui && npx playwright install --with-deps chromium)
       - name: Candidate external-etcd smoke
+        env:
+          UI_SMOKE: ${{ matrix.variant == 'ubuntu' && '1' || '0' }}
         run: |
           bash scripts/smoke-etcd.sh \
             "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
@@ -377,7 +432,20 @@ jobs:
             "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}" \
             "${{ matrix.variant }}" \
             "${{ needs.validate.outputs.version }}"
+      - uses: actions/setup-node@v4
+        if: matrix.variant == 'ubuntu'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: test/ui/package-lock.json
+      - name: Install Playwright for Admin UI smoke
+        if: matrix.variant == 'ubuntu'
+        run: |
+          npm ci --prefix test/ui
+          (cd test/ui && npx playwright install --with-deps chromium)
       - name: Final external-etcd smoke
+        env:
+          UI_SMOKE: ${{ matrix.variant == 'ubuntu' && '1' || '0' }}
         run: |
           bash scripts/smoke-etcd.sh \
             "${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}"
@@ -430,6 +498,8 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
           SOURCE_COMMIT: ${{ github.sha }}
+          DASHBOARD_SHA: ${{ needs.resolve-images.outputs.reuse_existing == 'true' && needs.resolve-images.outputs.dashboard_sha || needs.validate.outputs.dashboard_sha }}
+          DASHBOARD_SOURCE_SHA256: ${{ needs.resolve-images.outputs.reuse_existing == 'true' && needs.resolve-images.outputs.dashboard_source_sha256 || needs.validate.outputs.dashboard_source_sha256 }}
           WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           OPENEULER_SBOM: ${{ github.workspace }}/release-assets/agw-${{ needs.validate.outputs.version }}-openeuler.cyclonedx.json
           UBUNTU_SBOM: ${{ github.workspace }}/release-assets/agw-${{ needs.validate.outputs.version }}-ubuntu.cyclonedx.json

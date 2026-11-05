@@ -86,7 +86,7 @@ def load_env(path: Path) -> dict[str, str]:
 
 def source_ratio() -> dict[str, Any]:
     patch_added = 0
-    for patch in sorted((ROOT / "patches").rglob("*.patch")):
+    for patch in sorted((ROOT / "patches" / "apisix").rglob("*.patch")):
         for line in patch.read_text(encoding="utf-8").splitlines():
             if line.startswith("+") and not line.startswith("+++"):
                 patch_added += 1
@@ -201,7 +201,8 @@ GitHub Actions artifact 中，不把大体积、易过期的运行产物提交�
 - TLS：Tongsuo `{env['TONGSHUO_VERSION']}` 动态链接，启用 TLCP/NTLS
   双证书能力，并支持同一 SNI 下普通 TLS 与 TLCP 双栈。
 - 品牌头：`apisix.server_header` 缺省 `agw`，自定义字符串生效，`false` 抑制。
-- Admin UI：内置 APISIX Admin UI 静态资源，入口位于 Admin API 的 `/ui/`。
+- Admin UI：从 `apache/apisix-dashboard` master 源码构建 AGW Dashboard，入口位于
+  Admin API 的 `/ui/`；实际 commit 记录在镜像标签、provenance 和发布清单中。
 
 兼容承诺仅覆盖上游 APISIX `{upstream}` 的协议与 Admin API 行为，以及本仓文档明确
 列出的发行层差异。
@@ -210,7 +211,7 @@ GitHub Actions artifact 中，不把大体积、易过期的运行产物提交�
     documents[EVIDENCE / "02-source" / "BASELINE.md"] = f"""{GENERATED}
 # 基线来源
 
-唯一事实源是 `scripts/baseline.env`。`make fetch` 会校验 tag/commit、源码归档
+长期基线事实源是 `scripts/baseline.env`。`make fetch` 会校验 tag/commit、源码归档
 SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 
 ## 上游与运行时
@@ -218,7 +219,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 | 项 | 版本/tag/口径 | commit 或 SHA256 |
 |---|---|---|
 {table_row("APISIX", env["APISIX_TAG"], f"`{env['APISIX_COMMIT']}`")}
-{table_row("APISIX Admin UI", env["APISIX_UI_DEB_VERSION"], f"`{env['APISIX_UI_DEB_SHA256']}`")}
+{table_row("APISIX Dashboard", f"`{env['APISIX_DASHBOARD_REPO']}:{env['APISIX_DASHBOARD_REF']}`", "每次构建解析并记录 commit")}
 {table_row("OpenResty", env["OPENRESTY_VERSION"], f"`{env['OPENRESTY_COMMIT']}`")}
 {table_row("Tongsuo", env["TONGSHUO_VERSION"], f"`{env['TONGSHUO_COMMIT']}`")}
 {table_row("Tongsuo/OpenSSL 内核", env["TONGSHUO_OPENSSL_VERSION"], "-")}
@@ -243,6 +244,7 @@ OpenResty bundle 中的同名组件。
 |---|---|
 {table_row("openEuler", f"`{env['OPENEULER_BASE_REF']}`")}
 {table_row("Ubuntu", f"`{env['UBUNTU_BASE_REF']}`")}
+{table_row("Admin UI builder", f"`{env['NODE_BASE_REF']}`（amd64 `{env['NODE_BASE_AMD64_DIGEST']}`）")}
 {table_row("测试 etcd", f"`{env['ETCD_TEST_IMAGE']}@{env['ETCD_TEST_IMAGE_DIGEST']}`")}
 """
 
@@ -250,7 +252,8 @@ OpenResty bundle 中的同名组件。
 # 许可证与归属
 
 - Apache APISIX `{env['APISIX_TAG']}`：Apache License 2.0。
-- APISIX Admin UI 静态资源：来自官方 `{env['APISIX_UI_DEB_NAME']}`，Apache License 2.0。
+- APISIX Dashboard 源码：来自 `{env['APISIX_DASHBOARD_REPO']}` 的
+  `{env['APISIX_DASHBOARD_REF']}`，Apache License 2.0；镜像保留源码 LICENSE/NOTICE。
 - OpenResty `{env['OPENRESTY_VERSION']}`、Tongsuo `{env['TONGSHUO_VERSION']}`、
   PCRE2、zlib、LuaRocks 与运行时模块：以各自源码归档内 LICENSE/NOTICE 为准。
 - 最终镜像保留 APISIX 与 OpenResty 目录内的上游许可证、NOTICE 和第三方归属文件。
@@ -277,9 +280,11 @@ SBOM artifact 为准。
     documents[EVIDENCE / "05-build" / "BUILD.md"] = f"""{GENERATED}
 # 构建链
 
-`packaging/docker/Dockerfile` 有两个 builder 和两个 final stage：
+`packaging/docker/Dockerfile` 有一个 Admin UI builder、两个发行版 builder 和两个
+final stage：
 
 ```text
+dashboard-builder -> both final stages
 openeuler-builder -> openeuler-final
 ubuntu-builder    -> ubuntu-final
 ```
@@ -294,9 +299,15 @@ ubuntu-builder    -> ubuntu-final
 5. 安装 LuaRocks `{env['LUAROCKS_VERSION']}`，构建 APISIX 依赖并安装
    APISIX `{env['APISIX_TAG']}`。
 
-APISIX 源码发布包不包含已构建的 Admin UI。构建过程从固定 SHA256 的官方
-`{env['APISIX_UI_DEB_NAME']}` 中只提取 `/usr/local/apisix/ui`，不安装官方包内的
-OpenResty 或 APISIX 运行时。
+APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开始时只解析一次
+`apache/apisix-dashboard` master HEAD，下载该精确 commit 的源码归档，并由
+`dashboard-builder` 使用 Node `{env['NODE_BASE_TAG']}`、pnpm
+`{env['DASHBOARD_PNPM_VERSION']}` 执行 lint、单测和生产构建。两个镜像变体共享同一
+commit；同版本在不同日期重新构建时可使用不同 master。
+
+AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
+APISIX Logo/favicon、右上角 Docs、语言菜单翻译 CTA，并保留 SSL 详情页对隐藏私钥
+字段的兼容修复。
 
 final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过
 RPATH 定位，不设置全局 `LD_LIBRARY_PATH`，避免污染 `dnf`、`git` 等系统工具使用的
@@ -355,7 +366,7 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 ## 静态与基线
 
 - 校验 APISIX、OpenResty、Tongsuo、PCRE2、7 个运行时模块的 tag/commit 与归档哈希。
-- 校验 openEuler、Ubuntu、etcd 测试镜像的 index digest。
+- 校验 openEuler、Ubuntu、Node UI builder、etcd 测试镜像的 index digest。
 - 验证跟踪补丁可应用、Lua 语法、workflow YAML、shell 语法与去字符门禁。
 - 以 `--check` 验证本目录生成文件与 `VERSION`/基线/补丁/模块事实一致。
 
@@ -364,10 +375,14 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 - 最终镜像无 gcc、g++、make。
 - 最终镜像不设置全局 `LD_LIBRARY_PATH`。
 - OpenResty、APISIX CLI、捆绑 PCRE2/zlib 与 `lua-resty-limit-traffic` 可加载。
-- Admin UI 入口与 JavaScript/CSS/SVG 静态资源已打包；`/ui/`、静态资源和 SPA
-  fallback 可通过 Admin API 端口访问。
+- Admin UI 由 Dashboard 源码构建，入口与 JavaScript/CSS 静态资源已打包；`/ui/`、
+  静态资源和 SPA fallback 可通过 Admin API 端口访问。
+- 页面 `<title>` 与动态标题为 `AGW Dashboard`；Logo/favicon、Docs、翻译 CTA 不进入
+  构建产物。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
 - Admin UI 的 SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
+- Playwright 在 APISIX 3.19.0 上验证桌面/移动品牌、无 Logo/Docs/翻译 CTA、路由详情
+  和 SSL 详情页。
 - 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
 - TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。
 - Server Header 冒烟在容器内规范化夹具权限，并拒绝 worker 初始化错误。

@@ -1,7 +1,7 @@
 <!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
 # 基线来源
 
-唯一事实源是 `scripts/baseline.env`。`make fetch` 会校验 tag/commit、源码归档
+长期基线事实源是 `scripts/baseline.env`。`make fetch` 会校验 tag/commit、源码归档
 SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 
 ## 上游与运行时
@@ -9,7 +9,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 | 项 | 版本/tag/口径 | commit 或 SHA256 |
 |---|---|---|
 | APISIX | 3.19.0 | `473043623c161966f3f6ef4e8f12d2d8667a12d2` |
-| APISIX Admin UI | 3.19.0-0 | `d9c1d0f83b19b1d091d993ca727aa8d0870db8ca3c284f2eb207f4b1fc08c308` |
+| APISIX Dashboard | `apache/apisix-dashboard:master` | 每次构建解析并记录 commit |
 | OpenResty | 1.31.8.1 | `265baf62de60397452f306d61b168ab2c1809d41` |
 | Tongsuo | 8.5.0 | `80cfbe3eb194a4d30da90742273c305ad4d096be` |
 | Tongsuo/OpenSSL 内核 | 3.5.4 | - |
@@ -40,4 +40,5 @@ OpenResty bundle 中的同名组件。
 |---|---|
 | openEuler | `quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e` |
 | Ubuntu | `ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852` |
+| Admin UI builder | `node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914`（amd64 `sha256:025b8e975a61d94e33abeafaad1255ef44e4898cf1a1b6446860009c72e6d284`） |
 | 测试 etcd | `quay.io/coreos/etcd:v3.5.21@sha256:a3ccd299377af4b9968d8cbaaf9722fe354297f11908f74a846075e1e5f4ee89` |

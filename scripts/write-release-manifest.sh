@@ -4,6 +4,8 @@ set -euo pipefail
 
 RELEASE_VERSION="${RELEASE_VERSION:?缺少 RELEASE_VERSION}"
 SOURCE_COMMIT="${SOURCE_COMMIT:?缺少 SOURCE_COMMIT}"
+DASHBOARD_SHA="${DASHBOARD_SHA:?缺少 DASHBOARD_SHA}"
+DASHBOARD_SOURCE_SHA256="${DASHBOARD_SOURCE_SHA256:?缺少 DASHBOARD_SOURCE_SHA256}"
 OPENEULER_DIGEST="${OPENEULER_DIGEST:?缺少 OPENEULER_DIGEST}"
 UBUNTU_DIGEST="${UBUNTU_DIGEST:?缺少 UBUNTU_DIGEST}"
 OPENEULER_SBOM="${OPENEULER_SBOM:?缺少 OPENEULER_SBOM}"
@@ -22,6 +24,14 @@ for digest in "$OPENEULER_DIGEST" "$UBUNTU_DIGEST"; do
     exit 1
   }
 done
+[[ "$DASHBOARD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "错误: 非法 Dashboard commit: $DASHBOARD_SHA" >&2
+  exit 1
+}
+[[ "$DASHBOARD_SOURCE_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "错误: 非法 Dashboard 归档 SHA256: $DASHBOARD_SOURCE_SHA256" >&2
+  exit 1
+}
 test -f "$OPENEULER_SBOM"
 test -f "$UBUNTU_SBOM"
 
@@ -37,13 +47,16 @@ UPSTREAM_VERSION="${RELEASE_VERSION%%-*}"
 CREATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 python3 - "$OUT" "$RELEASE_VERSION" "$UPSTREAM_VERSION" "$SOURCE_REPOSITORY" \
-  "$SOURCE_COMMIT" "$WORKFLOW_RUN_URL" "$CREATED_AT" \
+  "$SOURCE_COMMIT" "$DASHBOARD_SHA" "$DASHBOARD_SOURCE_SHA256" \
+  "$WORKFLOW_RUN_URL" "$CREATED_AT" \
   "$OPENEULER_DIGEST" "$UBUNTU_DIGEST" "$OPENEULER_SBOM" "$UBUNTU_SBOM" \
   "$(sha256_of "$OPENEULER_SBOM")" "$(sha256_of "$UBUNTU_SBOM")" \
   "$AGW_IMAGE_REPOSITORY" "$OPENEULER_BASE_REF" "$OPENEULER_BASE_INDEX_DIGEST" \
   "$OPENEULER_BASE_AMD64_DIGEST" "$UBUNTU_BASE_REF" "$UBUNTU_BASE_INDEX_DIGEST" \
   "$UBUNTU_BASE_AMD64_DIGEST" "$TRIVY_VERSION" "$SYFT_VERSION" \
-  "$RUNTIME_USER" "$NGINX_WORKER_USER" "$TONGSUO_CVE_PARITY" <<'PY'
+  "$RUNTIME_USER" "$NGINX_WORKER_USER" "$TONGSUO_CVE_PARITY" \
+  "$NODE_BASE_REF" "$NODE_BASE_INDEX_DIGEST" "$NODE_BASE_AMD64_DIGEST" \
+  "$DASHBOARD_PNPM_VERSION" <<'PY'
 import json
 import os
 import sys
@@ -54,6 +67,8 @@ import sys
     upstream_version,
     source_repository,
     source_commit,
+    dashboard_sha,
+    dashboard_source_sha256,
     workflow_run_url,
     created_at,
     openeuler_digest,
@@ -74,6 +89,10 @@ import sys
     runtime_user,
     nginx_worker_user,
     tongsuo_cve_parity,
+    node_base_ref,
+    node_base_index_digest,
+    node_base_amd64_digest,
+    dashboard_pnpm_version,
 ) = sys.argv[1:]
 
 
@@ -114,6 +133,18 @@ manifest = {
         "commit": source_commit,
         "tag": f"v{release_version}",
         "workflowRun": workflow_run_url,
+    },
+    "dashboardSource": {
+        "repository": "https://github.com/apache/apisix-dashboard",
+        "ref": "master",
+        "commit": dashboard_sha,
+        "archiveSha256": dashboard_source_sha256,
+        "packageManager": {"name": "pnpm", "version": dashboard_pnpm_version},
+        "builderImage": {
+            "reference": node_base_ref,
+            "indexDigest": node_base_index_digest,
+            "amd64Digest": node_base_amd64_digest,
+        },
     },
     "releasePolicy": {
         "candidateImagesRequired": 2,

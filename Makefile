@@ -7,13 +7,17 @@ UPSTREAM_VERSION := $(shell cut -d- -f1 < VERSION)
 VARIANT ?= openeuler
 IMAGE ?= agw:$(FULL_VERSION)-$(VARIANT)
 PLATFORM ?= linux/amd64
+DASHBOARD_SHA ?=
+DASHBOARD_SOURCE_SHA256 ?=
+NPM_REGISTRY ?=
 
 .PHONY: help fetch evidence build-image build-images verify-image verify-images \
-        verify-etcd verify static clean
+        verify-etcd verify static clean dashboard-fetch
 
 help:
 	@echo "AGW $(FULL_VERSION)"
 	@echo "  fetch         校验全部基线并下载/校验源码归档到 distfiles/"
+	@echo "  dashboard-fetch 解析并下载当前 apache/apisix-dashboard master"
 	@echo "  evidence      根据版本、基线、补丁和模块刷新 evidence/"
 	@echo "  build-image   VARIANT=openeuler|ubuntu IMAGE=<ref> 构建单个最终镜像"
 	@echo "  build-images  顺序构建两个最终镜像"
@@ -31,16 +35,31 @@ evidence:
 build-image:
 	test -d distfiles
 	test -f distfiles/apisix-$(UPSTREAM_VERSION).tar.gz
-	docker build \
-		--platform $(PLATFORM) \
-		--target $(VARIANT)-final \
-		--build-arg AGW_VERSION=$(FULL_VERSION) \
-		-t $(IMAGE) \
-		-f packaging/docker/Dockerfile .
+	@set -euo pipefail; \
+		sha="$(DASHBOARD_SHA)"; \
+		if [ -z "$$sha" ]; then sha="$$(bash scripts/dashboard-source.sh resolve)"; fi; \
+		source_sha="$(DASHBOARD_SOURCE_SHA256)"; \
+		if [ -z "$$source_sha" ]; then source_sha="$$(bash scripts/dashboard-source.sh fetch "$$sha")"; fi; \
+		docker build \
+			--platform $(PLATFORM) \
+			--target $(VARIANT)-final \
+			--build-arg AGW_VERSION=$(FULL_VERSION) \
+			--build-arg DASHBOARD_SHA="$$sha" \
+			--build-arg DASHBOARD_SOURCE_SHA256="$$source_sha" \
+			--build-arg NPM_REGISTRY="$(NPM_REGISTRY)" \
+			-t $(IMAGE) \
+			-f packaging/docker/Dockerfile .
 
 build-images:
-	$(MAKE) build-image VARIANT=openeuler IMAGE=agw:$(FULL_VERSION)-openeuler
-	$(MAKE) build-image VARIANT=ubuntu IMAGE=agw:$(FULL_VERSION)-ubuntu
+	@set -euo pipefail; \
+		sha="$(DASHBOARD_SHA)"; \
+		if [ -z "$$sha" ]; then sha="$$(bash scripts/dashboard-source.sh resolve)"; fi; \
+		source_sha="$(DASHBOARD_SOURCE_SHA256)"; \
+		if [ -z "$$source_sha" ]; then source_sha="$$(bash scripts/dashboard-source.sh fetch "$$sha")"; fi; \
+		$(MAKE) build-image VARIANT=openeuler IMAGE=agw:$(FULL_VERSION)-openeuler \
+			DASHBOARD_SHA="$$sha" DASHBOARD_SOURCE_SHA256="$$source_sha"; \
+		$(MAKE) build-image VARIANT=ubuntu IMAGE=agw:$(FULL_VERSION)-ubuntu \
+			DASHBOARD_SHA="$$sha" DASHBOARD_SOURCE_SHA256="$$source_sha"
 
 verify-image:
 	test -n "$(IMAGE)"
@@ -56,6 +75,13 @@ verify-etcd:
 
 verify:
 	bash scripts/static-checks.sh
+
+dashboard-fetch:
+	@set -euo pipefail; \
+		sha="$(DASHBOARD_SHA)"; \
+		if [ -z "$$sha" ]; then sha="$$(bash scripts/dashboard-source.sh resolve)"; fi; \
+		source_sha="$$(bash scripts/dashboard-source.sh fetch "$$sha")"; \
+		printf 'dashboard_sha=%s\ndashboard_source_sha256=%s\n' "$$sha" "$$source_sha"
 
 static: verify
 

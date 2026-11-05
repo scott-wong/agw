@@ -1,0 +1,281 @@
+diff --git a/index.html b/index.html
+index 3557107..7b5dfdc 100644
+--- a/index.html
++++ b/index.html
+@@ -2,9 +2,8 @@
+ <html lang="en">
+   <head>
+     <meta charset="UTF-8" />
+-    <link rel="icon" type="image/svg+xml" href="/src/assets/apisix-logo.svg" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Apache APISIX Dashboard</title>
++    <title>AGW Dashboard</title>
+   </head>
+   <body>
+     <div id="root"></div>
+diff --git a/src/assets/apisix-logo.svg b/src/assets/apisix-logo.svg
+deleted file mode 100644
+index 8e99cc5..0000000
+--- a/src/assets/apisix-logo.svg
++++ /dev/null
+@@ -1,15 +0,0 @@
+-<svg width="185" height="156" viewBox="0 0 185 156" fill="none" xmlns="http://www.w3.org/2000/svg">
+-<path d="M0 155.5L94 0L185 155.5H140L94 83L42.5 155.5H0Z" fill="#F8423F"/>
+-<path d="M94 82.5L42.5 155H0L76.5 57L94 82.5Z" fill="url(#paint0_linear)"/>
+-<path d="M140 155.5H185L94 0L140 155.5Z" fill="url(#paint1_linear)"/>
+-<defs>
+-<linearGradient id="paint0_linear" x1="222.5" y1="50" x2="85" y2="223.5" gradientUnits="userSpaceOnUse">
+-<stop offset="0.536111" stop-color="#FC0A04"/>
+-<stop offset="1" stop-color="#CF0500" stop-opacity="0.77"/>
+-</linearGradient>
+-<linearGradient id="paint1_linear" x1="139.5" y1="1.50861e-06" x2="226" y2="136" gradientUnits="userSpaceOnUse">
+-<stop offset="0.473466" stop-color="#E2423E"/>
+-<stop offset="1" stop-color="#E2423E" stop-opacity="0.77"/>
+-</linearGradient>
+-</defs>
+-</svg>
+diff --git a/src/components/Header/LanguageMenu.tsx b/src/components/Header/LanguageMenu.tsx
+index 461e689..236e0b4 100644
+--- a/src/components/Header/LanguageMenu.tsx
++++ b/src/components/Header/LanguageMenu.tsx
+@@ -14,7 +14,7 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
+-import { Anchor, Button, Menu } from '@mantine/core';
++import { Button, Menu } from '@mantine/core';
+ import { useTranslation } from 'react-i18next';
+ import i18nProgress from 'virtual:i18n-progress';
+
+@@ -87,16 +87,6 @@ export const LanguageMenu = () => {
+             <TranslationProgress lang={lang} />
+           </Menu.Item>
+         ))}
+-        <Menu.Divider />
+-        <Menu.Label>
+-          <Anchor
+-            href="https://github.com/apache/apisix-dashboard/issues/1407"
+-            target="_blank"
+-            size="xs"
+-          >
+-            {t('help-us-translate')}
+-          </Anchor>
+-        </Menu.Label>
+       </Menu.Dropdown>
+     </Menu>
+   );
+diff --git a/src/components/Header/index.tsx b/src/components/Header/index.tsx
+index 494952e..0f8f7af 100644
+--- a/src/components/Header/index.tsx
++++ b/src/components/Header/index.tsx
+@@ -14,71 +14,13 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
+-import {
+-  ActionIcon,
+-  AppShell,
+-  Burger,
+-  Button,
+-  Group,
+-  Image,
+-  Text,
+-} from '@mantine/core';
++import { AppShell, Burger, Group, Text } from '@mantine/core';
+ import type { FC } from 'react';
+ import { useTranslation } from 'react-i18next';
+
+-import apisixLogo from '@/assets/apisix-logo.svg';
+-import IconDocs from '~icons/tabler/book';
+-
+ import { LanguageMenu } from './LanguageMenu';
+ import { SettingModalBtn } from './SettingModalBtn';
+
+-const DOCS_URL = 'https://apisix.apache.org/docs/';
+-
+-const docsAnchorProps = {
+-  component: 'a',
+-  href: DOCS_URL,
+-  target: '_blank',
+-  rel: 'noopener noreferrer',
+-  variant: 'light',
+-} as const;
+-
+-/**
+- * Labelled from `sm` up, icon-only below it. The header also carries the
+- * language control, whose label is the whole point of showing it, so Docs —
+- * the secondary affordance — is what sheds its label when space runs out.
+- * Long locales ("Documentación", "Dokumentation") overflow otherwise.
+- */
+-const DocsBtn = () => {
+-  const { t } = useTranslation();
+-  return (
+-    <>
+-      <Button
+-        {...docsAnchorProps}
+-        visibleFrom="sm"
+-        size="compact-sm"
+-        leftSection={<IconDocs aria-hidden focusable="false" />}
+-      >
+-        {t('docs')}
+-      </Button>
+-      <ActionIcon
+-        {...docsAnchorProps}
+-        hiddenFrom="sm"
+-        size="md"
+-        aria-label={t('docs')}
+-      >
+-        <IconDocs aria-hidden focusable="false" />
+-      </ActionIcon>
+-    </>
+-  );
+-};
+-
+-const Logo = () => {
+-  const { t } = useTranslation();
+-  return (
+-    <Image src={apisixLogo} alt={t('apisix.logo')} w={24} h={24} fit="fill" />
+-  );
+-};
+-
+ type HeaderProps = {
+   opened: boolean;
+   toggle: () => void;
+@@ -97,18 +39,10 @@ export const Header: FC<HeaderProps> = (props) => {
+             size="sm"
+             aria-label={t('a11y.toggleNavigation')}
+           />
+-          <Logo />
+-          {/* Below `sm` the burger appears and the header also carries the
+-              Docs and language controls; with a long locale (e.g. German
+-              "Dokumentation"/"Deutsch") that no longer fits on one row and
+-              the controls overlapped the page content. The logo still
+-              identifies the app, so drop the wordmark rather than the
+-              control labels — showing the active language is the point of
+-              the language button. */}
++          <Text hiddenFrom="sm">AGW</Text>
+           <Text visibleFrom="sm">{t('apisix.dashboard')}</Text>
+         </Group>
+         <Group h="100%" gap="sm" wrap="nowrap">
+-          <DocsBtn />
+           <SettingModalBtn />
+           <LanguageMenu />
+         </Group>
+diff --git a/src/hooks/useDocumentTitle.ts b/src/hooks/useDocumentTitle.ts
+index 9a4f229..1479d47 100644
+--- a/src/hooks/useDocumentTitle.ts
++++ b/src/hooks/useDocumentTitle.ts
+@@ -23,7 +23,7 @@ import { navRoutes } from '@/config/navRoutes';
+
+ // matches the static <title> in index.html (the default before any route
+ // resolves and the suffix on every page)
+-const APP_NAME = 'Apache APISIX Dashboard';
++const APP_NAME = 'AGW Dashboard';
+
+ type SourceLabel = keyof Resources['en']['common']['sources'];
+
+diff --git a/src/locales/de/common.json b/src/locales/de/common.json
+index a9b04ac..3c1cfcc 100644
+--- a/src/locales/de/common.json
++++ b/src/locales/de/common.json
+@@ -1,7 +1,6 @@
+ {
+   "apisix": {
+-    "dashboard": "APISIX Dashboard",
+-    "logo": "APISIX Logo"
++    "dashboard": "AGW Dashboard"
+   },
+   "consumerGroups": {
+     "singular": "Konsumenten-Gruppe"
+@@ -303,7 +302,6 @@
+   "globalRules": {
+     "singular": "Globale Regel"
+   },
+-  "help-us-translate": "Helfen Sie uns übersetzen!",
+   "info": {
+     "add": {
+       "success": "{{name}} erfolgreich hinzugefügt",
+diff --git a/src/locales/en/common.json b/src/locales/en/common.json
+index 4dac293..12ec8e2 100644
+--- a/src/locales/en/common.json
++++ b/src/locales/en/common.json
+@@ -1,7 +1,6 @@
+ {
+   "apisix": {
+-    "dashboard": "APISIX Dashboard",
+-    "logo": "APISIX Logo"
++    "dashboard": "AGW Dashboard"
+   },
+   "consumerGroups": {
+     "singular": "Consumer Group"
+@@ -303,7 +302,6 @@
+   "globalRules": {
+     "singular": "Global Rule"
+   },
+-  "help-us-translate": "Help Us Translate!",
+   "info": {
+     "add": {
+       "success": "Add {{name}} Successfully",
+diff --git a/src/locales/es/common.json b/src/locales/es/common.json
+index effabf5..79d25c7 100644
+--- a/src/locales/es/common.json
++++ b/src/locales/es/common.json
+@@ -1,7 +1,6 @@
+ {
+   "apisix": {
+-    "dashboard": "Panel de APISIX",
+-    "logo": "Logo de APISIX"
++    "dashboard": "AGW Dashboard"
+   },
+   "consumerGroups": {
+     "singular": "Grupo de Consumidores"
+@@ -303,7 +302,6 @@
+   "globalRules": {
+     "singular": "Regla Global"
+   },
+-  "help-us-translate": "¡Ayúdanos a Traducir!",
+   "info": {
+     "add": {
+       "success": "Añadido {{name}} con éxito",
+diff --git a/src/locales/tr/common.json b/src/locales/tr/common.json
+index f5cba54..ca15901 100644
+--- a/src/locales/tr/common.json
++++ b/src/locales/tr/common.json
+@@ -1,7 +1,6 @@
+ {
+   "apisix": {
+-    "dashboard": "APISIX Dashboard",
+-    "logo": "APISIX Logo"
++    "dashboard": "AGW Dashboard"
+   },
+   "consumerGroups": {
+     "singular": "Consumer Grubu"
+@@ -303,7 +302,6 @@
+   "globalRules": {
+     "singular": "Global Rule"
+   },
+-  "help-us-translate": "Çeviri Yapmak İster misiniz?",
+   "info": {
+     "add": {
+       "success": "{{name}} başarıyla eklendi",
+diff --git a/src/locales/zh/common.json b/src/locales/zh/common.json
+index de2767a..4c0417d 100644
+--- a/src/locales/zh/common.json
++++ b/src/locales/zh/common.json
+@@ -1,7 +1,6 @@
+ {
+   "apisix": {
+-    "dashboard": "APISIX Dashboard",
+-    "logo": "APISIX Logo"
++    "dashboard": "AGW Dashboard"
+   },
+   "consumerGroups": {
+     "singular": "消费者组"
+@@ -303,7 +302,6 @@
+   "globalRules": {
+     "singular": "全局规则"
+   },
+-  "help-us-translate": "帮助我们进行翻译!",
+   "info": {
+     "add": {
+       "success": "添加 {{name}} 成功",

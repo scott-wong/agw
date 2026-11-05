@@ -7,3 +7,7 @@ modules
 README.md
 CONTEXT.md
 Makefile
+.DS_Store
+test/ui/node_modules
+test/ui/playwright-report
+test/ui/test-results

@@ -59,14 +59,18 @@ grep -q 'for i = 2, #value.certs do' /usr/local/apisix/apisix/plugins/gm.lua
 
 echo "[runtime] bundled APISIX Admin UI"
 test -f /usr/local/apisix/ui/index.html
-grep -q '<title>Apache APISIX' /usr/local/apisix/ui/index.html
+grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.css' -print -quit)"
-test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.svg' -print -quit)"
-grep -q 't.keys=Array.isArray(t.keys)' \
-  /usr/local/apisix/ui/assets/schema-Cj04qC-8.js
-grep -Fq 'o.fields[r]?.id??`key-${d.id}`' \
-  /usr/local/apisix/ui/assets/schema-Cj04qC-8.js
+! grep -R -I -q -F 'https://apisix.apache.org/docs/' /usr/local/apisix/ui
+! grep -R -I -q -F 'https://github.com/apache/apisix-dashboard/issues/1407' \
+  /usr/local/apisix/ui
+! grep -R -I -q -F '帮助我们进行翻译' /usr/local/apisix/ui
+! grep -R -I -q -F 'APISIX Dashboard' /usr/local/apisix/ui
+! grep -R -I -q -F 'Help Us Translate' /usr/local/apisix/ui
+test ! -e /usr/local/apisix/ui/assets/apisix-logo.svg
+! grep -R -I -q -F 'Apache APISIX Dashboard' /usr/local/apisix/ui
+test -f /usr/local/share/agw/dashboard-source.json
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"
 bash "$SMOKE_DIR/gm-ntls-handshake.sh" "$OPENSSL"

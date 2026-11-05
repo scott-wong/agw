@@ -8,3 +8,6 @@ output/
 output-runtime/
 output-apisix/
 evidence/04-sbom/*.cyclonedx.json
+test/ui/node_modules/
+test/ui/playwright-report/
+test/ui/test-results/

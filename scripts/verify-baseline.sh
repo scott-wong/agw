@@ -56,11 +56,12 @@ manifest_digest() {
   local url="$1" auth="${2:-}" tmp
   tmp="$(mktemp)"
   if [ -n "$auth" ]; then
-    curl -fsSL -H "Authorization: Bearer ${auth}" \
+    curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 30 \
+      -H "Authorization: Bearer ${auth}" \
       -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json' \
       -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
   else
-    curl -fsSL \
+    curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 30 \
       -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json' \
       -o "$tmp" "$url" || { rm -f "$tmp"; return 1; }
   fi
@@ -79,7 +80,8 @@ check_quay_index() {
 
 check_dockerhub_index() {
   local repo="$1" tag="$2" want="$3" token got
-  token="$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull" \
+  token="$(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 30 \
+    "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull" \
     | sed -E 's/.*"token":"([^"]+)".*/\1/')" || fail "取得 Docker Hub token 失败"
   [ -n "$token" ] || fail "Docker Hub 返回空 token"
   got="$(manifest_digest "https://registry-1.docker.io/v2/${repo}/manifests/${tag}" "$token")" \
@@ -103,7 +105,6 @@ check_tag_commit "$LUA_RESTY_EVENTS_REPO" "$LUA_RESTY_EVENTS_TAG" "$LUA_RESTY_EV
 check_tag_commit "$NGX_HTTP_FFI_CLIENT_REPO" "$NGX_HTTP_FFI_CLIENT_TAG" "$NGX_HTTP_FFI_CLIENT_COMMIT"
 
 download_verify "$APISIX_SOURCE_URL" "$DISTFILES/apisix-${APISIX_TAG}.tar.gz" "$APISIX_SHA256"
-download_verify "$APISIX_UI_DEB_URL" "$DISTFILES/$APISIX_UI_DEB_NAME" "$APISIX_UI_DEB_SHA256"
 download_verify "$OPENRESTY_SOURCE_URL" "$DISTFILES/openresty-${OPENRESTY_VERSION}.tar.gz" "$OPENRESTY_SHA256"
 download_verify "$TONGSHUO_SOURCE_URL" "$DISTFILES/tongsuo-${TONGSHUO_VERSION}.tar.gz" "$TONGSHUO_SHA256"
 download_verify "$PCRE2_SOURCE_URL" "$DISTFILES/pcre2-${PCRE2_VERSION}.tar.gz" "$PCRE2_SHA256"
@@ -130,6 +131,7 @@ verify_github_archive "$LUA_RESTY_LIMIT_TRAFFIC_REPO" "$LUA_RESTY_LIMIT_TRAFFIC_
 
 check_quay_index "$OPENEULER_BASE_IMAGE" "$OPENEULER_BASE_TAG" "$OPENEULER_BASE_INDEX_DIGEST"
 check_dockerhub_index library/ubuntu "$UBUNTU_BASE_TAG" "$UBUNTU_BASE_INDEX_DIGEST"
+check_dockerhub_index library/node "$NODE_BASE_TAG" "$NODE_BASE_INDEX_DIGEST"
 check_quay_index coreos/etcd v3.5.21 "$ETCD_TEST_IMAGE_DIGEST"
 
 rm -rf "$ROOT/build/apisix-${APISIX_TAG}" "$ROOT/build/src"
