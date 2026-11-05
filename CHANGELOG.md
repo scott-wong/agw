@@ -15,6 +15,9 @@
 - 精简最终镜像层：在 builder 阶段清理 OpenResty 头文件、静态库、pkgconfig 和文档；
   复用已有 OpenResty 二进制，避免最终镜像重复打包。
 
+### Fixed
+- 更新 Ubuntu 最终镜像中的 apt 安全补丁，保持基础镜像 pin 不变。
+
 ## [3.19.0-agw.7] - 2026-11-05
 
 ### Changed

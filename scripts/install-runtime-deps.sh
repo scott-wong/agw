@@ -24,6 +24,8 @@ case "$DISTRO" in
       ca-certificates findutils libbrotli1 libgcc-s1 libldap2 libncursesw6 \
       libpcre2-8-0 libpcre3 libreadline8t64 libstdc++6 libxml2 libxslt1.1 \
       libyaml-0-2
+    # Keep the pinned base image while taking Ubuntu's fixed apt package.
+    apt-get install -y --no-install-recommends apt
     apt-get clean
     rm -rf /var/lib/apt/lists/*
     ;;
