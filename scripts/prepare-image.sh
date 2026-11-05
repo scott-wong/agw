@@ -16,6 +16,9 @@ source "$SCRIPT_DIR/baseline.env"
 
 export PATH="/usr/local/bin:/usr/local/openresty/bin:/usr/local/openresty/luajit/bin:$PATH"
 
+ln -sfn /usr/local/openresty/bin/openresty /usr/local/bin/openresty
+ln -sfn /usr/local/openresty/bin/resty /usr/local/bin/resty
+
 case "$DISTRO" in
   openeuler)
     grep -qi '^ID="openEuler"' /etc/os-release
@@ -33,17 +36,21 @@ case "$DISTRO" in
     ;;
 esac
 
-# The final stages are independent of the builder and therefore contain no
-# compiler. Remove headers and static archives that OpenResty's install target
-# copies by default but which are not needed at runtime.
+# Keep this cleanup idempotent for locally built images. The builder already
+# prunes these paths so the final COPY does not carry their bytes in a layer.
 rm -rf \
   /usr/local/openresty/include \
   /usr/local/openresty/luajit/include \
   /usr/local/openresty/pcre/include \
   /usr/local/openresty/zlib/include \
-  /usr/local/openresty/tongsuo/include
+  /usr/local/openresty/tongsuo/include \
+  /usr/local/openresty/pod
 find /usr/local/openresty -type f -name '*.a' -delete
 find /usr/local/openresty -type d -name pkgconfig -prune -exec rm -rf {} +
+test ! -e /usr/local/openresty/include
+test ! -e /usr/local/openresty/pod
+test -L /usr/local/bin/openresty
+test -L /usr/local/bin/resty
 
 echo "[prepare] checking native runtime dependencies"
 while IFS= read -r binary; do

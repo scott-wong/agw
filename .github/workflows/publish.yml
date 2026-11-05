@@ -201,6 +201,13 @@ jobs:
             DASHBOARD_SOURCE_SHA256=${{ needs.validate.outputs.dashboard_source_sha256 }}
           cache-from: type=gha,scope=agw-${{ matrix.variant }}
           cache-to: type=gha,mode=min,scope=agw-${{ matrix.variant }}
+      - name: Check compressed image size budget
+        run: |
+          bash scripts/install-security-tools.sh crane
+          REF="${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
+          bash scripts/check-image-size.sh \
+            --compressed "${{ matrix.variant }}" \
+            "$REF"
       - name: Record candidate digest
         run: |
           mkdir -p digest
@@ -472,6 +479,11 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v4
+      - name: Extract current changelog section
+        run: |
+          VERSION="$(tr -d ' \n' < VERSION)"
+          python3 scripts/changelog.py extract "$VERSION" > release-notes-changelog.md
+          cat release-notes-changelog.md
       - uses: actions/download-artifact@v4
         with:
           name: agw-final-digests
@@ -525,17 +537,18 @@ jobs:
           OPENEULER_DIGEST="$(python3 -c 'import json; print(json.load(open("final-digests.json"))["openeuler"])')"
           UBUNTU_DIGEST="$(python3 -c 'import json; print(json.load(open("final-digests.json"))["ubuntu"])')"
           NOTES="$(mktemp)"
-          cat > "$NOTES" <<EOF
-          AGW ${VERSION} 同时发布两个镜像变体（linux/amd64）：
-
-          - openEuler 24.03 LTS SP4: ${REPO}:${VERSION}-openeuler, ${REPO}:${{ needs.validate.outputs.upstream }}-openeuler, ${REPO}:latest-openeuler
-            digest: ${OPENEULER_DIGEST}
-          - Ubuntu 24.04: ${REPO}:${VERSION}-ubuntu, ${REPO}:${{ needs.validate.outputs.upstream }}-ubuntu, ${REPO}:latest-ubuntu
-            digest: ${UBUNTU_DIGEST}
-
-          本版本不交付 RPM、不提供离线镜像 tar。附件包含两个 CycloneDX SBOM 与 release-manifest.json。
-          Trivy 为唯一阻断扫描器；openEuler 的 OS RPM 漏洞库覆盖在 Trivy 中仍为 unsupported。
-          EOF
+          {
+            printf 'AGW %s 同时发布两个镜像变体（linux/amd64）：\n\n' "$VERSION"
+            cat release-notes-changelog.md
+            printf '\n- openEuler 24.03 LTS SP4: %s:%s-openeuler, %s:%s-openeuler, %s:latest-openeuler\n' \
+              "$REPO" "$VERSION" "$REPO" "${{ needs.validate.outputs.upstream }}" "$REPO"
+            printf '  digest: %s\n' "$OPENEULER_DIGEST"
+            printf '- Ubuntu 24.04: %s:%s-ubuntu, %s:%s-ubuntu, %s:latest-ubuntu\n' \
+              "$REPO" "$VERSION" "$REPO" "${{ needs.validate.outputs.upstream }}" "$REPO"
+            printf '  digest: %s\n\n' "$UBUNTU_DIGEST"
+            printf '本版本不交付 RPM、不提供离线镜像 tar。附件包含两个 CycloneDX SBOM 与 release-manifest.json。\n'
+            printf 'Trivy 为唯一阻断扫描器；openEuler 的 OS RPM 漏洞库覆盖在 Trivy 中仍为 unsupported。\n'
+          } > "$NOTES"
           gh release create "$TAG" \
             release-assets/agw-${VERSION}-openeuler.cyclonedx.json \
             release-assets/agw-${VERSION}-ubuntu.cyclonedx.json \

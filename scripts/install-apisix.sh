@@ -83,6 +83,18 @@ sed -i \
 rm -rf "$APISIX_PREFIX/deps/lib/luarocks" "$APISIX_PREFIX/deps/lib64/luarocks"
 find "$APISIX_PREFIX/deps" -type d -name doc -prune -exec rm -rf {} +
 
+# Prune OpenResty build-only files before the final image COPY. Removing them
+# in the final stage would leave the deleted bytes in the lower image layer.
+rm -rf \
+  "$OR_PREFIX/include" \
+  "$OR_PREFIX/luajit/include" \
+  "$OR_PREFIX/pcre/include" \
+  "$OR_PREFIX/zlib/include" \
+  "$OR_PREFIX/tongsuo/include" \
+  "$OR_PREFIX/pod"
+find "$OR_PREFIX" -type f -name '*.a' -delete
+find "$OR_PREFIX" -type d -name pkgconfig -prune -exec rm -rf {} +
+
 ln -sfn "$OR_PREFIX/bin/openresty" /usr/local/bin/openresty
 ln -sfn "$OR_PREFIX/bin/resty" /usr/local/bin/resty
 

@@ -96,7 +96,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.19.0-agw.7
+ARG AGW_VERSION=3.19.0-agw.8
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -125,8 +125,6 @@ RUN bash /opt/agw/scripts/install-runtime-deps.sh openeuler
 COPY --from=openeuler-builder /usr/local/openresty /usr/local/openresty
 COPY --from=openeuler-builder /usr/local/apisix /usr/local/apisix
 COPY --from=openeuler-builder /usr/local/bin/apisix /usr/local/bin/apisix
-COPY --from=openeuler-builder /usr/local/bin/openresty /usr/local/bin/openresty
-COPY --from=openeuler-builder /usr/local/bin/resty /usr/local/bin/resty
 COPY --from=openeuler-builder /usr/local/share/agw /usr/local/share/agw
 COPY --from=dashboard-builder /opt/agw/ui-dist /usr/local/apisix/ui
 COPY --from=dashboard-builder /opt/agw/dashboard-provenance.json /usr/local/share/agw/dashboard-source.json
@@ -147,7 +145,7 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.19.0-agw.7
+ARG AGW_VERSION=3.19.0-agw.8
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -176,8 +174,6 @@ RUN bash /opt/agw/scripts/install-runtime-deps.sh ubuntu
 COPY --from=ubuntu-builder /usr/local/openresty /usr/local/openresty
 COPY --from=ubuntu-builder /usr/local/apisix /usr/local/apisix
 COPY --from=ubuntu-builder /usr/local/bin/apisix /usr/local/bin/apisix
-COPY --from=ubuntu-builder /usr/local/bin/openresty /usr/local/bin/openresty
-COPY --from=ubuntu-builder /usr/local/bin/resty /usr/local/bin/resty
 COPY --from=ubuntu-builder /usr/local/share/agw /usr/local/share/agw
 COPY --from=dashboard-builder /opt/agw/ui-dist /usr/local/apisix/ui
 COPY --from=dashboard-builder /opt/agw/dashboard-provenance.json /usr/local/share/agw/dashboard-source.json

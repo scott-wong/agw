@@ -110,6 +110,11 @@ jobs:
             DASHBOARD_SOURCE_SHA256=${{ needs.dashboard-source.outputs.source_sha256 }}
           cache-from: type=gha,scope=agw-ubuntu
           cache-to: type=gha,mode=max,ignore-error=true,scope=agw-ubuntu
+      - name: Check local image size budget
+        run: |
+          bash scripts/check-image-size.sh \
+            --local ubuntu \
+            "agw:${{ steps.ver.outputs.version }}-ubuntu-ci"
       - name: Image and Server-header smoke
         run: |
           bash scripts/smoke-docker.sh \

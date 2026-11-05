@@ -16,6 +16,9 @@ bash -c 'source scripts/baseline.env'
 echo "[static] generated evidence"
 python3 scripts/gen-evidence.py --check
 
+echo "[static] changelog"
+python3 scripts/changelog.py check
+
 echo "[static] workflow and smoke YAML"
 ruby -e 'require "yaml"; ARGV.each { |path| YAML.load_file(path) }' \
   .github/workflows/*.yml test/smoke/*.yaml

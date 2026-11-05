@@ -23,7 +23,7 @@ help:
 	@echo "  build-images  顺序构建两个最终镜像"
 	@echo "  verify-image  IMAGE=<ref> VARIANT=<variant> 镜像冒烟（含 Server header/国密）"
 	@echo "  verify-etcd   IMAGE=<ref> 外置 etcd + Admin API 冒烟"
-	@echo "  verify        静态检查（shell/Lua patch/workflow YAML）"
+	@echo "  verify        静态检查（shell/Lua patch/workflow YAML/CHANGELOG）"
 	@echo "  clean         清理 build/ distfiles/ 与本地镜像输入"
 
 fetch:
