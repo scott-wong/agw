@@ -117,6 +117,14 @@ test('local documentation is packaged and defaults to Chinese', async ({
     )
     .toBeGreaterThan(0);
 
+  await page.goto('/ui/docs/#/architecture-design/apisix');
+  await expect(page).toHaveURL(
+    /#\/zh\/latest\/architecture-design\/apisix/
+  );
+  await expect(page.locator('.markdown-section')).toContainText(
+    '动态、实时、高性能'
+  );
+
   await page
     .locator('.markdown-section')
     .getByRole('link', { name: '插件文档' })

@@ -22,6 +22,9 @@
         var initialLanguage = saved === 'en' ? 'en' : 'zh';
         if (!location.hash || location.hash === '#/') {
           location.hash = '#/' + initialLanguage + '/latest/README';
+        } else if (!/^#\/(zh|en)\//.test(location.hash)) {
+          var route = location.hash.slice(2).replace(/^ui\/docs\//, '');
+          location.hash = '#/' + initialLanguage + '/latest/' + route;
         }
 
         function updateLanguageLinks() {

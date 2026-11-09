@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.13] - 2026-11-09
+
+### Fixed
+- 兼容旧版生成的缺失语言和版本前缀的文档 URL，自动跳转到当前语言的正确路径。
+
 ## [3.19.0-agw.12] - 2026-11-09
 
 ### Fixed
@@ -73,6 +78,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.13]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.13
 [3.19.0-agw.12]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.12
 [3.19.0-agw.11]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.11
 [3.19.0-agw.10]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.10
