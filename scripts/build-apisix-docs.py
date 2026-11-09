@@ -23,6 +23,17 @@ BLACKLIST_FILES = {
     "CHANGELOG.md",
     "upgrade-guide-from-2.15.x-to-3.0.0.md",
 }
+DROPPED_DOC_REDIRECT = {
+    "getting-started/README.md": "getting-started/configure-routes.md",
+}
+ATTRIBUTION_RE = re.compile(
+    r"^>\s*(?:"
+    r"本教程由 \[API7\.ai\]\(https://api7\.ai/?\) 编写。"
+    r"|The Getting Started tutorials are contributed by "
+    r"\[API7\.ai\]\(https://api7\.ai/?\)\."
+    r")\s*$\n?",
+    re.MULTILINE,
+)
 BRAND_ASSETS = {
     "MA.jpeg",
     "OA.jpg",
@@ -304,6 +315,13 @@ def transform_code(segment: str) -> str:
 def transform_markdown(path: Path, output: Path, images: ImageStore) -> None:
     text = strip_frontmatter(path.read_text(encoding="utf-8"))
     page_rel = path.relative_to(output).as_posix()
+    text = ATTRIBUTION_RE.sub("", text)
+    for dropped, replacement in DROPPED_DOC_REDIRECT.items():
+        text = text.replace(dropped, replacement)
+    if page_rel.startswith(
+        ("zh/latest/getting-started/", "en/latest/getting-started/")
+    ):
+        text = text.replace("](./README.md)", "](../installation-guide.md)")
     if path.name == "FAQ.md":
         text = remove_faq_community_tail(text)
     text = clean_community_lines(text)
@@ -387,6 +405,9 @@ def main() -> int:
 
     images = ImageStore(args.output)
     for language in ("zh", "en"):
+        (args.output / language / "latest" / "getting-started" / "README.md").unlink(
+            missing_ok=True
+        )
         for path in sorted((args.output / language / "latest").rglob("*.md")):
             if path.name == "_sidebar.md":
                 continue

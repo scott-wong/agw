@@ -6,7 +6,7 @@ SM TLS capabilities.
 
 ## Quick Links
 
-- [Getting Started](getting-started/README.md)
+- [Getting Started](getting-started/configure-routes.md)
 - [Installation Guide](installation-guide.md)
 - [Architecture](architecture-design/apisix.md)
 - [Terminology](terminology/api-gateway.md)

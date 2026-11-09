@@ -5,7 +5,7 @@ AGW 是一个独立开放的 API 网关发行版，提供路由、服务发现�
 
 ## 快速导航
 
-- [快速开始](getting-started/README.md)
+- [快速开始](getting-started/configure-routes.md)
 - [安装指南](installation-guide.md)
 - [架构设计](architecture-design/apisix.md)
 - [术语](terminology/api-gateway.md)

@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.14] - 2026-11-09
+
+### Changed
+- 移除文档开头的 API7.ai 教程署名，覆盖全部中英文文档。
+- 移除 `getting-started/README` 页面及其导航入口，相关链接改为首个入门教程或安装指南。
+
 ## [3.19.0-agw.13] - 2026-11-09
 
 ### Fixed
@@ -78,6 +84,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.14]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.14
 [3.19.0-agw.13]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.13
 [3.19.0-agw.12]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.12
 [3.19.0-agw.11]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.11

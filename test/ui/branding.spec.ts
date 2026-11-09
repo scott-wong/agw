@@ -97,6 +97,28 @@ test('local documentation is packaged and defaults to Chinese', async ({
   expect(
     (await page.request.get('/ui/docs/zh/latest/plugins/_sidebar.md')).status()
   ).toBe(404);
+  const removedGuide = await page.request.get(
+    '/ui/docs/zh/latest/getting-started/README.md'
+  );
+  expect(removedGuide.status()).toBe(404);
+  await expect(
+    page.locator('.sidebar-nav a[href*="/getting-started/README"]')
+  ).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText('本教程由');
+
+  const quickStartLink = page
+    .locator('.markdown-section a')
+    .filter({ hasText: '快速开始' })
+    .first();
+  await expect(quickStartLink).toHaveAttribute(
+    'href',
+    '#/zh/latest/getting-started/configure-routes'
+  );
+  await quickStartLink.click();
+  await expect(page).toHaveURL(
+    /#\/zh\/latest\/getting-started\/configure-routes/
+  );
+  await expect(page.locator('body')).not.toContainText('本教程由');
 
   const architectureLink = page
     .locator('a[href*="/zh/latest/architecture-design/apisix"]')
@@ -138,6 +160,11 @@ test('local documentation is packaged and defaults to Chinese', async ({
 
   await page.goto('/ui/docs/#/en/latest/README');
   await expect(page.locator('body')).toContainText('Quick Links');
+
+  await page.goto('/ui/docs/#/en/latest/getting-started/configure-routes');
+  await expect(page.locator('body')).not.toContainText(
+    'The Getting Started tutorials are contributed by'
+  );
 });
 
 test('route detail renders', async ({ page }) => {
