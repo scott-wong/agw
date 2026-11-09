@@ -17,6 +17,9 @@
 - 移除镜像体积门禁，文档随基础镜像按构建结果发布。
 - 更新 Node 文档/UI builder 基础镜像到当前 `22-alpine` digest。
 
+### Fixed
+- 修复 Admin UI 将 `/ui/docs/` 目录请求回退到 Dashboard 首页的问题。
+
 ## [3.19.0-agw.9] - 2026-11-05
 
 ### Added

@@ -1,0 +1,19 @@
+diff --git a/apisix/cli/ngx_tpl.lua b/apisix/cli/ngx_tpl.lua
+--- a/apisix/cli/ngx_tpl.lua
++++ b/apisix/cli/ngx_tpl.lua
+@@ -804,7 +804,14 @@
+         location ^~ /ui/ {
+             rewrite ^/ui/(.*)$ /$1 break;
+             root {* apisix_lua_home *}/ui;
++            location = /ui/docs {
++                absolute_redirect off;
++                return 301 /ui/docs/;
++            }
++            location = /ui/docs/ {
++                try_files /docs/index.html =404;
++            }
+-            try_files $uri /index.html =404;
++            try_files $uri $uri/index.html /index.html =404;
+             gzip on;
+             gzip_types text/css application/javascript application/json;
+             {% if agw_server_header == "" then %}
