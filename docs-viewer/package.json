@@ -1,0 +1,8 @@
+{
+  "name": "agw-docs-viewer",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "docsify": "4.13.1"
+  }
+}

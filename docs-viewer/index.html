@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>AGW 文档</title>
+    <link rel="stylesheet" href="assets/docsify.css" />
+    <link rel="stylesheet" href="assets/agw.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <nav class="agw-docs-lang" aria-label="Documentation language">
+      <a href="#/zh/latest/README" data-lang="zh">中文</a>
+      <span aria-hidden="true">|</span>
+      <a href="#/en/latest/README" data-lang="en">English</a>
+    </nav>
+    <script>
+      (function () {
+        var storageKey = 'agw-docs-lang';
+        var saved = localStorage.getItem(storageKey);
+        var initialLanguage = saved === 'en' ? 'en' : 'zh';
+        if (!location.hash || location.hash === '#/') {
+          location.hash = '#/' + initialLanguage + '/latest/README';
+        }
+
+        function updateLanguageLinks() {
+          var isEnglish = location.hash.indexOf('#/en/') === 0;
+          document.querySelectorAll('.agw-docs-lang a').forEach(function (link) {
+            link.classList.toggle(
+              'is-active',
+              link.getAttribute('data-lang') === (isEnglish ? 'en' : 'zh')
+            );
+          });
+        }
+
+        document.querySelectorAll('.agw-docs-lang a').forEach(function (link) {
+          link.addEventListener('click', function () {
+            localStorage.setItem(storageKey, link.getAttribute('data-lang'));
+          });
+        });
+        window.addEventListener('hashchange', updateLanguageLinks);
+        updateLanguageLinks();
+
+        window.$docsify = {
+          name: 'AGW 文档',
+          homepage: 'zh/latest/README.md',
+          basePath: '/ui/docs/',
+          loadSidebar: true,
+          subMaxLevel: 2,
+          auto2top: true,
+          executeScript: false,
+        };
+      })();
+    </script>
+    <script src="assets/docsify.min.js"></script>
+  </body>
+</html>

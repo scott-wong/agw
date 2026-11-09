@@ -11,6 +11,7 @@ evidence/04-sbom/*.cyclonedx.json
 test/ui/node_modules/
 test/ui/playwright-report/
 test/ui/test-results/
+docs-viewer/node_modules/
 examples/docker/**/.env
 examples/docker/**/etcd_data/
 examples/docker/**/tls/*

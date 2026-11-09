@@ -1,0 +1,39 @@
+.agw-docs-lang {
+  position: fixed;
+  top: 12px;
+  right: 20px;
+  z-index: 30;
+  padding: 4px 10px;
+  border: 1px solid #d9e1ea;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(31, 45, 61, 0.08);
+  font-size: 14px;
+}
+
+.agw-docs-lang a {
+  color: #4b5563;
+  text-decoration: none;
+}
+
+.agw-docs-lang a.is-active {
+  color: #111827;
+  font-weight: 600;
+}
+
+.agw-docs-lang span {
+  margin: 0 6px;
+  color: #9ca3af;
+}
+
+body .sidebar {
+  padding-top: 34px;
+}
+
+@media (max-width: 768px) {
+  .agw-docs-lang {
+    top: 8px;
+    right: 12px;
+    background: #fff;
+  }
+}

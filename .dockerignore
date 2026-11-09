@@ -11,3 +11,4 @@ Makefile
 test/ui/node_modules
 test/ui/playwright-report
 test/ui/test-results
+docs-viewer/node_modules

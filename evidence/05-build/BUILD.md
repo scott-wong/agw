@@ -1,11 +1,12 @@
 <!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
 # 构建链
 
-`packaging/docker/Dockerfile` 有一个 Admin UI builder、两个发行版 builder 和两个
-final stage：
+`packaging/docker/Dockerfile` 有一个 documentation builder、一个 Admin UI builder、
+两个发行版 builder 和两个 final stage：
 
 ```text
-dashboard-builder -> both final stages
+docs-builder       -> both final stages
+dashboard-builder  -> both final stages
 openeuler-builder -> openeuler-final
 ubuntu-builder    -> ubuntu-final
 ```
@@ -27,8 +28,10 @@ APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开
 commit；同版本在不同日期重新构建时可使用不同 master。
 
 AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
-APISIX Logo/favicon、右上角 Docs、语言菜单翻译 CTA，并保留 SSL 详情页对隐藏私钥
-字段的兼容修复。
+APISIX Logo/favicon、语言菜单翻译 CTA、恢复指向本地 `/ui/docs/` 的文档入口，
+并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由 `docs-builder` 从当前
+APISIX `3.19.0` 源码归档构建，过滤非产品内容、完成 AGW 品牌替换，
+并本地化可获取的外部图片。
 
 final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过
 RPATH 定位，不设置全局 `LD_LIBRARY_PATH`，避免污染 `dnf`、`git` 等系统工具使用的

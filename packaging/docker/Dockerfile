@@ -12,6 +12,26 @@ ARG UBUNTU_BASE=ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf9491
 ARG NODE_BASE=node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
 
 # ---------------------------------------------------------------------------
+# Documentation builder
+# ---------------------------------------------------------------------------
+FROM ${NODE_BASE} AS docs-builder
+
+ARG NPM_REGISTRY=
+
+WORKDIR /opt/agw
+RUN apk add --no-cache bash ca-certificates python3 tar
+COPY docs-viewer/ /opt/agw/docs-viewer/
+COPY scripts/baseline.env scripts/build-apisix-docs.py scripts/build-apisix-docs.sh /opt/agw/scripts/
+COPY distfiles/apisix-*.tar.gz /opt/agw/distfiles/
+RUN if [ -n "$NPM_REGISTRY" ]; then \
+      npm config set registry "$NPM_REGISTRY"; \
+    fi \
+    && cd /opt/agw/docs-viewer \
+    && npm ci --ignore-scripts --no-audit --no-fund \
+    && cd /opt/agw \
+    && bash scripts/build-apisix-docs.sh
+
+# ---------------------------------------------------------------------------
 # Admin UI builder
 # ---------------------------------------------------------------------------
 FROM ${NODE_BASE} AS dashboard-builder
@@ -96,7 +116,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.19.0-agw.9
+ARG AGW_VERSION=3.19.0-agw.10
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -127,6 +147,7 @@ COPY --from=openeuler-builder /usr/local/apisix /usr/local/apisix
 COPY --from=openeuler-builder /usr/local/bin/apisix /usr/local/bin/apisix
 COPY --from=openeuler-builder /usr/local/share/agw /usr/local/share/agw
 COPY --from=dashboard-builder /opt/agw/ui-dist /usr/local/apisix/ui
+COPY --from=docs-builder /opt/agw/docs-dist /usr/local/apisix/ui/docs
 COPY --from=dashboard-builder /opt/agw/dashboard-provenance.json /usr/local/share/agw/dashboard-source.json
 COPY packaging/docker/agw-entrypoint.sh /usr/local/bin/agw-entrypoint
 
@@ -145,7 +166,7 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.19.0-agw.9
+ARG AGW_VERSION=3.19.0-agw.10
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -176,6 +197,7 @@ COPY --from=ubuntu-builder /usr/local/apisix /usr/local/apisix
 COPY --from=ubuntu-builder /usr/local/bin/apisix /usr/local/bin/apisix
 COPY --from=ubuntu-builder /usr/local/share/agw /usr/local/share/agw
 COPY --from=dashboard-builder /opt/agw/ui-dist /usr/local/apisix/ui
+COPY --from=docs-builder /opt/agw/docs-dist /usr/local/apisix/ui/docs
 COPY --from=dashboard-builder /opt/agw/dashboard-provenance.json /usr/local/share/agw/dashboard-source.json
 COPY packaging/docker/agw-entrypoint.sh /usr/local/bin/agw-entrypoint
 

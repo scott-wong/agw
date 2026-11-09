@@ -16,7 +16,7 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 
 ## 交付标签
 
-`VERSION` 当前为 `3.19.0-agw.9`，对应上游 `3.19.0`。每个变体有三个标签。
+`VERSION` 当前为 `3.19.0-agw.10`，对应上游 `3.19.0`。每个变体有三个标签。
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
@@ -27,11 +27,11 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.19.0-agw.9-openeuler
+ghcr.io/scott-wong/agw:3.19.0-agw.10-openeuler
 ghcr.io/scott-wong/agw:3.19.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.19.0-agw.9-ubuntu
+ghcr.io/scott-wong/agw:3.19.0-agw.10-ubuntu
 ghcr.io/scott-wong/agw:3.19.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
@@ -179,11 +179,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.9-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.9-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.9-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.9-ubuntu
-make verify-etcd IMAGE=agw:3.19.0-agw.9-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.10-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.10-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.10-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.10-ubuntu
+make verify-etcd IMAGE=agw:3.19.0-agw.10-openeuler
 ```
 
 常用入口：
@@ -198,9 +198,6 @@ make verify-etcd IMAGE=agw:3.19.0-agw.9-openeuler
 | `make verify-etcd` | 外置 etcd 与 Admin API 冒烟 |
 | `make clean` | 清理 `build/`、`distfiles/` 等本地产物 |
 
-镜像大小预算定义在 `scripts/baseline.env`：GHCR 压缩层大小是发布阻断指标，
-本地镜像大小用于构建阶段辅助检查；超过预算时必须显式评审并更新基线。
-
 ## 示例部署
 
 `examples/docker/` 提供 `agw-single` 和 `agw-ha` 两套 Docker Compose 示例。
@@ -210,6 +207,12 @@ etcd root 用户和认证启用由一次性 `etcd-init` Compose 服务完成，�
 - [示例说明](examples/docker/README.md)
 - [单节点示例](examples/docker/agw-single/docker-compose.yml)
 - [三节点示例](examples/docker/agw-ha/docker-compose.yml)
+
+## 内置文档
+
+两个镜像都内置 AGW 文档，Dashboard header 的“文档”按钮打开
+`/ui/docs/`。文档来源为当前 baseline 的 Apache APISIX 文档，构建时完成
+AGW 品牌替换、产品内容过滤和外部图片本地化；默认中文，可切换到 English。
 
 ## CI 与发布
 

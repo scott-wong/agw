@@ -71,6 +71,15 @@ test -f /usr/local/apisix/conf/nginx.conf
 test -f /usr/local/apisix/ui/index.html
 grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
+test -f /usr/local/apisix/ui/docs/index.html
+grep -Fq '<title>AGW 文档</title>' /usr/local/apisix/ui/docs/index.html
+test -f /usr/local/apisix/ui/docs/zh/latest/README.md
+test -f /usr/local/apisix/ui/docs/en/latest/README.md
+test -f /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
+test -f /usr/local/apisix/ui/docs/en/latest/_sidebar.md
+test ! -e /usr/local/apisix/ui/docs/assets/images/apisix.png
+test ! -e /usr/local/apisix/ui/docs/assets/images/apisix-seed.svg
+test ! -e /usr/local/apisix/ui/docs/assets/images/apache.png
 ! grep -R -I -q -F 'https://apisix.apache.org/docs/' /usr/local/apisix/ui
 ! grep -R -I -q -F 'https://github.com/apache/apisix-dashboard/issues/1407' \
   /usr/local/apisix/ui

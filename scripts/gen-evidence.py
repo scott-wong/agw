@@ -280,11 +280,12 @@ SBOM artifact 为准。
     documents[EVIDENCE / "05-build" / "BUILD.md"] = f"""{GENERATED}
 # 构建链
 
-`packaging/docker/Dockerfile` 有一个 Admin UI builder、两个发行版 builder 和两个
-final stage：
+`packaging/docker/Dockerfile` 有一个 documentation builder、一个 Admin UI builder、
+两个发行版 builder 和两个 final stage：
 
 ```text
-dashboard-builder -> both final stages
+docs-builder       -> both final stages
+dashboard-builder  -> both final stages
 openeuler-builder -> openeuler-final
 ubuntu-builder    -> ubuntu-final
 ```
@@ -306,8 +307,10 @@ APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开
 commit；同版本在不同日期重新构建时可使用不同 master。
 
 AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
-APISIX Logo/favicon、右上角 Docs、语言菜单翻译 CTA，并保留 SSL 详情页对隐藏私钥
-字段的兼容修复。
+APISIX Logo/favicon、语言菜单翻译 CTA、恢复指向本地 `/ui/docs/` 的文档入口，
+并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由 `docs-builder` 从当前
+APISIX `{env['APISIX_TAG']}` 源码归档构建，过滤非产品内容、完成 AGW 品牌替换，
+并本地化可获取的外部图片。
 
 final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过
 RPATH 定位，不设置全局 `LD_LIBRARY_PATH`，避免污染 `dnf`、`git` 等系统工具使用的
@@ -379,12 +382,12 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 - OpenResty、APISIX CLI、捆绑 PCRE2/zlib 与 `lua-resty-limit-traffic` 可加载。
 - Admin UI 由 Dashboard 源码构建，入口与 JavaScript/CSS 静态资源已打包；`/ui/`、
   静态资源和 SPA fallback 可通过 Admin API 端口访问。
-- 页面 `<title>` 与动态标题为 `AGW Dashboard`；Logo/favicon、Docs、翻译 CTA 不进入
-  构建产物。
+- 页面 `<title>` 与动态标题为 `AGW Dashboard`；Logo/favicon、翻译 CTA 不进入构建
+  产物；文档入口指向本地 `/ui/docs/`。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
 - Admin UI 的 SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
-- Playwright 在 APISIX 3.19.0 上验证桌面/移动品牌、无 Logo/Docs/翻译 CTA、路由详情
-  和 SSL 详情页。
+- Playwright 在 APISIX 3.19.0 上验证桌面/移动品牌、无 Logo/翻译 CTA、本地文档、
+  路由详情和 SSL 详情页；文档默认中文并支持 English。
 - 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
 - TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。
 - Server Header 冒烟在容器内规范化夹具权限，并拒绝 worker 初始化错误。

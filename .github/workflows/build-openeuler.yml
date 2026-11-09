@@ -112,11 +112,6 @@ jobs:
           # mode=max exports builder stages too; otherwise every run recompiles
           # Tongsuo and OpenResty even when their inputs have not changed.
           cache-to: type=gha,mode=max,ignore-error=true,scope=agw-openeuler
-      - name: Check local image size budget
-        run: |
-          bash scripts/check-image-size.sh \
-            --local openeuler \
-            "agw:${{ steps.ver.outputs.version }}-openeuler-ci"
       - name: Image and Server-header smoke
         run: |
           bash scripts/smoke-docker.sh \

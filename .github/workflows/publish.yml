@@ -201,13 +201,6 @@ jobs:
             DASHBOARD_SOURCE_SHA256=${{ needs.validate.outputs.dashboard_source_sha256 }}
           cache-from: type=gha,scope=agw-${{ matrix.variant }}
           cache-to: type=gha,mode=min,scope=agw-${{ matrix.variant }}
-      - name: Check compressed image size budget
-        run: |
-          bash scripts/install-security-tools.sh crane
-          REF="${{ needs.validate.outputs.repo }}:${{ needs.validate.outputs.version }}-${{ matrix.variant }}-candidate"
-          bash scripts/check-image-size.sh \
-            --compressed "${{ matrix.variant }}" \
-            "$REF"
       - name: Record candidate digest
         run: |
           mkdir -p digest

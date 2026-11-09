@@ -1,0 +1,52 @@
+--- a/src/components/Header/index.tsx
++++ b/src/components/Header/index.tsx
+@@ -17 +17,8 @@
+-import { AppShell, Burger, Group, Text } from '@mantine/core';
++import {
++  ActionIcon,
++  AppShell,
++  Burger,
++  Button,
++  Group,
++  Text,
++} from '@mantine/core';
+@@ -20,0 +28,2 @@
++import IconDocs from '~icons/tabler/book';
++
+@@ -23,0 +33,34 @@
++const DOCS_URL = '/ui/docs/';
++
++const docsAnchorProps = {
++  component: 'a',
++  href: DOCS_URL,
++  target: '_blank',
++  rel: 'noopener noreferrer',
++  variant: 'light',
++} as const;
++
++const DocsBtn = () => {
++  const { t } = useTranslation();
++  return (
++    <>
++      <Button
++        {...docsAnchorProps}
++        visibleFrom="sm"
++        size="compact-sm"
++        leftSection={<IconDocs aria-hidden focusable="false" />}
++      >
++        {t('docs')}
++      </Button>
++      <ActionIcon
++        {...docsAnchorProps}
++        hiddenFrom="sm"
++        size="md"
++        aria-label={t('docs')}
++      >
++        <IconDocs aria-hidden focusable="false" />
++      </ActionIcon>
++    </>
++  );
++};
++
+@@ -45,0 +89 @@
++          <DocsBtn />

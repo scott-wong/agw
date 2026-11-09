@@ -69,6 +69,7 @@ test('desktop branding, title, logo, docs, and translation CTA', async ({
   await expect(
     page.locator('a[href*="apisix.apache.org/docs"]')
   ).toHaveCount(0);
+  await expect(page.locator('a[href="/ui/docs/"]').first()).toBeVisible();
 
   await page.getByRole('button', { name: /Select language/ }).click();
   await expect(
@@ -83,6 +84,19 @@ test('mobile header keeps the AGW wordmark', async ({ page }) => {
 
   await expect(page.getByText('AGW', { exact: true })).toBeVisible();
   await expect(page.getByText('AGW Dashboard', { exact: true })).toBeHidden();
+});
+
+test('local documentation is packaged and defaults to Chinese', async ({
+  page,
+}) => {
+  await page.goto('/ui/docs/');
+
+  await expect(page).toHaveTitle(/AGW 文档/);
+  await expect(page.locator('body')).toContainText('快速导航');
+  await expect(page).toHaveURL(/#\/zh\/latest\/README/);
+
+  await page.goto('/ui/docs/#/en/latest/README');
+  await expect(page.locator('body')).toContainText('Quick Links');
 });
 
 test('route detail renders', async ({ page }) => {

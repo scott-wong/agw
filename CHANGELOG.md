@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.10] - 2026-11-09
+
+### Added
+- 在 Dashboard 内置中英文 AGW 文档，默认中文，并提供本地 `/ui/docs/` 入口。
+- 文档构建会过滤社区、用户案例、博客和上游品牌资源，并记录外部图片来源。
+
+### Changed
+- Dashboard header 恢复“文档”入口，指向本地文档并保留 Dashboard 当前操作状态。
+- 移除镜像体积门禁，文档随基础镜像按构建结果发布。
+
 ## [3.19.0-agw.9] - 2026-11-05
 
 ### Added
@@ -46,6 +56,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.10]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.10
 [3.19.0-agw.9]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.9
 [3.19.0-agw.7]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.7
 [3.19.0-agw.6]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.6
