@@ -20,12 +20,18 @@
         var storageKey = 'agw-docs-lang';
         var saved = localStorage.getItem(storageKey);
         var initialLanguage = saved === 'en' ? 'en' : 'zh';
-        if (!location.hash || location.hash === '#/') {
-          location.hash = '#/' + initialLanguage + '/latest/README';
-        } else if (!/^#\/(zh|en)\//.test(location.hash)) {
-          var route = location.hash.slice(2).replace(/^ui\/docs\//, '');
-          location.hash = '#/' + initialLanguage + '/latest/' + route;
+
+        function normalizeRouteHash() {
+          if (!location.hash || location.hash === '#/') {
+            location.hash = '#/' + initialLanguage + '/latest/README';
+            return;
+          }
+          if (!/^#\/(zh|en)\//.test(location.hash)) {
+            var route = location.hash.slice(2).replace(/^ui\/docs\//, '');
+            location.hash = '#/' + initialLanguage + '/latest/' + route;
+          }
         }
+        normalizeRouteHash();
 
         function updateLanguageLinks() {
           var isEnglish = location.hash.indexOf('#/en/') === 0;
@@ -42,7 +48,10 @@
             localStorage.setItem(storageKey, link.getAttribute('data-lang'));
           });
         });
-        window.addEventListener('hashchange', updateLanguageLinks);
+        window.addEventListener('hashchange', function () {
+          normalizeRouteHash();
+          updateLanguageLinks();
+        });
         updateLanguageLinks();
 
         window.$docsify = {
