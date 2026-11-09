@@ -116,7 +116,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.19.0-agw.10
+ARG AGW_VERSION=3.19.0-agw.11
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -166,7 +166,7 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.19.0-agw.10
+ARG AGW_VERSION=3.19.0-agw.11
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 

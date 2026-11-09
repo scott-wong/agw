@@ -95,6 +95,32 @@ test('local documentation is packaged and defaults to Chinese', async ({
   await expect(page.locator('body')).toContainText('快速导航');
   await expect(page).toHaveURL(/#\/zh\/latest\/README/);
 
+  const architectureLink = page
+    .locator('a[href*="/zh/latest/architecture-design/apisix"]')
+    .first();
+  await expect(architectureLink).toBeVisible();
+  await architectureLink.click();
+  await expect(page).toHaveURL(
+    /#\/zh\/latest\/architecture-design\/apisix/
+  );
+  await expect(page.locator('.markdown-section')).toContainText(
+    '动态、实时、高性能'
+  );
+  const architectureImage = page.locator('.markdown-section img').first();
+  await expect(architectureImage).toBeVisible();
+  await expect
+    .poll(() =>
+      architectureImage.evaluate((image: HTMLImageElement) => image.naturalWidth)
+    )
+    .toBeGreaterThan(0);
+
+  await page
+    .locator('.markdown-section')
+    .getByRole('link', { name: '插件文档' })
+    .click();
+  await expect(page).toHaveURL(/#\/zh\/latest\/plugins\/batch-requests/);
+  await expect(page.locator('.markdown-section')).toContainText('batch-requests');
+
   await page.goto('/ui/docs/#/en/latest/README');
   await expect(page.locator('body')).toContainText('Quick Links');
 });

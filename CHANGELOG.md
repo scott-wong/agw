@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.11] - 2026-11-09
+
+### Fixed
+- 修复内置文档的相对链接和图片路径丢失语言、版本或站点前缀的问题。
+- 修复点击侧边栏或正文文档链接后显示空白的问题。
+- 修复中文文档中的内部页面链接错误跳转到英文文档或静态 Markdown 文件的问题。
+
 ## [3.19.0-agw.10] - 2026-11-09
 
 ### Added
@@ -60,6 +67,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.11]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.11
 [3.19.0-agw.10]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.10
 [3.19.0-agw.9]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.9
 [3.19.0-agw.7]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.7

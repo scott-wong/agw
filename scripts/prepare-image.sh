@@ -73,10 +73,17 @@ grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
 test -f /usr/local/apisix/ui/docs/index.html
 grep -Fq '<title>AGW 文档</title>' /usr/local/apisix/ui/docs/index.html
+grep -Fq 'relativePath: true' /usr/local/apisix/ui/docs/index.html
 test -f /usr/local/apisix/ui/docs/zh/latest/README.md
 test -f /usr/local/apisix/ui/docs/en/latest/README.md
 test -f /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
 test -f /usr/local/apisix/ui/docs/en/latest/_sidebar.md
+grep -Fq '](/zh/latest/' /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
+grep -Fq '](/en/latest/' /usr/local/apisix/ui/docs/en/latest/_sidebar.md
+grep -Fq 'src="/ui/docs/assets/images/' \
+  /usr/local/apisix/ui/docs/zh/latest/architecture-design/apisix.md
+! grep -R -I -q -E '\]\(/ui/docs/(zh|en)/latest/' /usr/local/apisix/ui/docs
+! grep -R -I -q -E "href=[\"']/ui/docs/(zh|en)/latest/" /usr/local/apisix/ui/docs
 test ! -e /usr/local/apisix/ui/docs/assets/images/apisix.png
 test ! -e /usr/local/apisix/ui/docs/assets/images/apisix-seed.svg
 test ! -e /usr/local/apisix/ui/docs/assets/images/apache.png

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import html
 import json
 import mimetypes
 import re
@@ -95,23 +96,21 @@ def copy_tree(source: Path, target: Path) -> None:
     shutil.copytree(source, target, ignore=ignore)
 
 
-def local_image_exists(output: Path, page_rel: str, url: str) -> bool:
+def local_asset_url(output: Path, page_rel: str, url: str) -> str | None:
     if url.startswith("/ui/docs/"):
-        return (output / url.removeprefix("/ui/docs/")).is_file()
+        if (output / url.removeprefix("/ui/docs/")).is_file():
+            return url
+        return None
     if url.startswith("/") or "://" in url:
-        return False
+        return None
     candidate = (output / Path(page_rel).parent / url).resolve()
     try:
-        candidate.relative_to(output.resolve())
+        relative = candidate.relative_to(output.resolve())
     except ValueError:
-        return False
-    return candidate.is_file()
-
-
-def local_asset_url(output: Path, page_rel: str, url: str) -> str | None:
-    if local_image_exists(output, page_rel, url):
-        return url
-    return None
+        return None
+    if not candidate.is_file():
+        return None
+    return f"/ui/docs/{relative.as_posix()}"
 
 
 class ImageStore:
@@ -186,7 +185,9 @@ def rewrite_url(url: str, output: Path, page_rel: str) -> str | None:
         match = re.search(r"/(?:zh/)?docs/apisix/(.*?)(#.*)?$", parsed.path)
         if not match:
             return None
-        language = "zh" if "/zh/" in parsed.path else "en"
+        language = page_rel.split("/", 1)[0]
+        if language not in {"zh", "en"}:
+            language = "en"
         relative = match.group(1).strip("/")
         anchor = match.group(2) or ""
         if not relative:
@@ -198,7 +199,7 @@ def rewrite_url(url: str, output: Path, page_rel: str) -> str | None:
             candidate = output / language / "latest" / relative.replace(".md", "/README.md")
         if not candidate.is_file():
             return None
-        return f"/ui/docs/{language}/latest/{relative}{anchor}"
+        return f"/{language}/latest/{relative}{anchor}"
     if parsed.netloc == "github.com" and parsed.path.startswith("/apache/apisix"):
         return None
     if "raw.githubusercontent.com" in parsed.netloc and "/docs/assets/images/" in parsed.path:
@@ -233,7 +234,10 @@ def transform_segment(segment: str, output: Path, page_rel: str, images: ImageSt
     def image_repl(match: re.Match[str]) -> str:
         alt, url = match.group(1), match.group(2)
         resolved = images.resolve(url, page_rel)
-        return f"![{beand_text(alt)}]({resolved})" if resolved else beand_text(alt)
+        if not resolved:
+            return beand_text(alt)
+        alt = html.escape(beand_text(alt), quote=True)
+        return f'<img src="{resolved}" alt="{alt}">'
 
     def html_image_repl(match: re.Match[str]) -> str:
         before, url, after = match.group(1), match.group(2), match.group(3)
@@ -253,6 +257,16 @@ def transform_segment(segment: str, output: Path, page_rel: str, images: ImageSt
         return f"[{label}]({rewritten}{suffix})"
 
     segment = LINK_MD_RE.sub(link_repl, segment)
+    segment = re.sub(
+        r"\]\(/ui/docs/((?:zh|en)/latest/[^)\s]+\.md(?:#[^)]*)?)\)",
+        r"](/\1)",
+        segment,
+    )
+    segment = re.sub(
+        r"(href=[\"'])/ui/docs/((?:zh|en)/latest/[^\"']+\.md(?:#[^\"']*)?)([\"'])",
+        r"\1/\2\3",
+        segment,
+    )
     segment = re.sub(
         r"https?://apisix\.apache\.org(?:/[^\s)\"']*)?",
         "http://gateway.example.com",
@@ -317,7 +331,7 @@ def sidebar_items(items: list[Any], output: Path, language: str, depth: int = 0)
             if not target.is_file():
                 continue
             label = beand_text(item.get("label") or Path(doc).stem.replace("-", " ").title())
-            lines.append(f"{indent}- [{label}]({doc}.md)")
+            lines.append(f"{indent}- [{label}](/{language}/latest/{doc}.md)")
         elif item.get("type") == "category":
             nested = sidebar_items(item.get("items", []), output, language, depth + 1)
             if nested:
@@ -329,7 +343,7 @@ def sidebar_items(items: list[Any], output: Path, language: str, depth: int = 0)
 def write_sidebar(config: Path, output: Path, language: str) -> None:
     data = json.loads(config.read_text(encoding="utf-8"))
     title = "AGW 文档" if language == "zh" else "AGW Documentation"
-    lines = [f"- [{title}](README.md)"]
+    lines = [f"- [{title}](/{language}/latest/README.md)"]
     lines.extend(sidebar_items(data.get("sidebar", []), output, language))
     (output / language / "latest" / "_sidebar.md").write_text(
         "\n".join(lines) + "\n", encoding="utf-8"
