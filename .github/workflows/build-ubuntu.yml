@@ -59,6 +59,8 @@ jobs:
         with:
           path: distfiles
           key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+          restore-keys: |
+            agw-source-pins-${{ runner.os }}-
       - run: make fetch
       - run: make verify
       - run: bash scripts/verify-debrand.sh
@@ -93,7 +95,7 @@ jobs:
           path: distfiles
           key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-${{ needs.dashboard-source.outputs.sha }}
           restore-keys: |
-            agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-
+            agw-source-pins-${{ runner.os }}-
       - run: make fetch
       - name: Build Ubuntu final image
         uses: docker/build-push-action@v6

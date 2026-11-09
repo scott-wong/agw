@@ -46,6 +46,8 @@ jobs:
         with:
           path: distfiles
           key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}
+          restore-keys: |
+            agw-source-pins-${{ runner.os }}-
       - run: make fetch
       - run: make verify
       - name: Resolve latest Dashboard master
@@ -175,7 +177,7 @@ jobs:
           path: distfiles
           key: agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-${{ needs.validate.outputs.dashboard_sha }}
           restore-keys: |
-            agw-source-pins-${{ runner.os }}-${{ hashFiles('scripts/baseline.env') }}-
+            agw-source-pins-${{ runner.os }}-
       - run: make fetch
       - name: Log in to GHCR
         uses: docker/login-action@v3
