@@ -94,6 +94,9 @@ test('local documentation is packaged and defaults to Chinese', async ({
   await expect(page).toHaveTitle(/AGW 文档/);
   await expect(page.locator('body')).toContainText('快速导航');
   await expect(page).toHaveURL(/#\/zh\/latest\/README/);
+  expect(
+    (await page.request.get('/ui/docs/zh/latest/plugins/_sidebar.md')).status()
+  ).toBe(404);
 
   const architectureLink = page
     .locator('a[href*="/zh/latest/architecture-design/apisix"]')
@@ -120,6 +123,10 @@ test('local documentation is packaged and defaults to Chinese', async ({
     .click();
   await expect(page).toHaveURL(/#\/zh\/latest\/plugins\/batch-requests/);
   await expect(page.locator('.markdown-section')).toContainText('batch-requests');
+  await expect(
+    page.locator('.sidebar-nav a').filter({ hasText: 'Installation Guide' })
+  ).toBeVisible();
+  await expect(page.locator('.sidebar-nav')).not.toContainText('AGW Dashboard');
 
   await page.goto('/ui/docs/#/en/latest/README');
   await expect(page.locator('body')).toContainText('Quick Links');

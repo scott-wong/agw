@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.12] - 2026-11-09
+
+### Fixed
+- 文档目录中的缺失静态文件返回 `404`，不再错误回退到 Dashboard 首页。
+- 嵌套文档页面始终加载所属语言的根侧边栏，避免导航栏消失。
+
 ## [3.19.0-agw.11] - 2026-11-09
 
 ### Fixed
@@ -67,6 +73,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.12]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.12
 [3.19.0-agw.11]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.11
 [3.19.0-agw.10]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.10
 [3.19.0-agw.9]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.9

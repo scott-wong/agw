@@ -68,6 +68,7 @@ done < <(find /usr/local/openresty /usr/local/apisix -type f \
 /usr/local/openresty/bin/openresty -t -p /usr/local/apisix -c conf/nginx.conf
 
 test -f /usr/local/apisix/conf/nginx.conf
+grep -Fq 'location ^~ /ui/docs/' /usr/local/apisix/conf/nginx.conf
 test -f /usr/local/apisix/ui/index.html
 grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
