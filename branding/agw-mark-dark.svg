@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="agw-mark-dark-title">
+  <title id="agw-mark-dark-title">AGW gateway mark</title>
+  <g transform="translate(4 2)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 3 L105 29 L105 87 L58 113 L11 87 L11 29 Z" stroke="#F4F7FB" stroke-width="6"/>
+    <path d="M22 39 H43 L60 57 H83" stroke="#16AFC4" stroke-width="6"/>
+    <path d="M22 57 H83" stroke="#16AFC4" stroke-width="6"/>
+    <path d="M22 75 H43 L60 57" stroke="#16AFC4" stroke-width="6"/>
+    <path d="M83 57 H96" stroke="#F4F7FB" stroke-width="6"/>
+    <circle cx="60" cy="57" r="8" fill="#16AFC4" stroke="none"/>
+    <path d="M75 31 V83" stroke="#F4F7FB" stroke-width="5"/>
+  </g>
+</svg>

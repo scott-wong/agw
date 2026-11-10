@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="/ui/docs/assets/branding/agw-logo.svg" alt="AGW — Secure API Gateway" width="280">
+</p>
+
 # AGW Documentation
 
 AGW is an independent open API gateway distribution. It provides routing,

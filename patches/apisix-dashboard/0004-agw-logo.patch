@@ -1,0 +1,48 @@
+diff --git a/src/components/Header/index.tsx b/src/components/Header/index.tsx
+--- a/src/components/Header/index.tsx
++++ b/src/components/Header/index.tsx
+@@ -20,11 +20,15 @@
+   Burger,
+   Button,
+   Group,
++  Image,
+   Text,
++  useComputedColorScheme,
+ } from '@mantine/core';
+ import type { FC } from 'react';
+ import { useTranslation } from 'react-i18next';
+
++import agwMark from '@/assets/agw-mark.svg';
++import agwMarkDark from '@/assets/agw-mark-dark.svg';
+ import IconDocs from '~icons/tabler/book';
+
+ import { LanguageMenu } from './LanguageMenu';
+@@ -64,6 +68,20 @@
+   );
+ };
+
++const Logo = () => {
++  const { t } = useTranslation();
++  const colorScheme = useComputedColorScheme('light');
++  return (
++    <Image
++      src={colorScheme === 'dark' ? agwMarkDark : agwMark}
++      alt={t('apisix.logo')}
++      w={28}
++      h={28}
++      fit="contain"
++    />
++  );
++};
++
+ type HeaderProps = {
+   opened: boolean;
+   toggle: () => void;
+@@ -82,6 +100,7 @@
+             size="sm"
+             aria-label={t('a11y.toggleNavigation')}
+           />
++          <Logo />
+           <Text hiddenFrom="sm">AGW</Text>
+           <Text visibleFrom="sm">{t('apisix.dashboard')}</Text>
+         </Group>

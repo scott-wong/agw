@@ -11,14 +11,15 @@ DASHBOARD_SHA ?=
 DASHBOARD_SOURCE_SHA256 ?=
 NPM_REGISTRY ?=
 
-.PHONY: help fetch evidence build-image build-images verify-image verify-images \
-        verify-etcd verify static clean dashboard-fetch
+.PHONY: help fetch evidence brand-assets build-image build-images verify-image \
+        verify-images verify-etcd verify static clean dashboard-fetch
 
 help:
 	@echo "AGW $(FULL_VERSION)"
 	@echo "  fetch         校验全部基线并下载/校验源码归档到 distfiles/"
 	@echo "  dashboard-fetch 解析并下载当前 apache/apisix-dashboard master"
 	@echo "  evidence      根据版本、基线、补丁和模块刷新 evidence/"
+	@echo "  brand-assets  从 SVG 重新生成 PNG 与 favicon.ico"
 	@echo "  build-image   VARIANT=openeuler|ubuntu IMAGE=<ref> 构建单个最终镜像"
 	@echo "  build-images  顺序构建两个最终镜像"
 	@echo "  verify-image  IMAGE=<ref> VARIANT=<variant> 镜像冒烟（含 Server header/国密）"
@@ -31,6 +32,9 @@ fetch:
 
 evidence:
 	python3 scripts/gen-evidence.py
+
+brand-assets:
+	bash scripts/generate-brand-assets.sh
 
 build-image:
 	test -d distfiles

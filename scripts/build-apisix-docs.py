@@ -421,9 +421,20 @@ def write_sidebar(config: Path, output: Path, source_dir: Path, language: str) -
     )
 
 
-def copy_docsify(viewer: Path, output: Path) -> None:
+def copy_docsify(viewer: Path, output: Path, branding: Path) -> None:
     assets = output / "assets"
     assets.mkdir(parents=True, exist_ok=True)
+    brand_assets = assets / "branding"
+    brand_assets.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "agw-logo.svg",
+        "agw-logo-dark.svg",
+        "agw-mark.svg",
+        "agw-mark-dark.svg",
+        "agw-favicon.svg",
+        "favicon.ico",
+    ):
+        shutil.copy2(branding / name, brand_assets / name)
     shutil.copy2(viewer / "index.html", output / "index.html")
     shutil.copy2(viewer / "agw.css", assets / "agw.css")
     shutil.copy2(viewer / "node_modules/docsify/lib/docsify.min.js", assets / "docsify.min.js")
@@ -438,6 +449,7 @@ def main() -> int:
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--viewer", required=True, type=Path)
+    parser.add_argument("--branding", required=True, type=Path)
     parser.add_argument("--version", required=True)
     parser.add_argument("--source-url", required=True)
     args = parser.parse_args()
@@ -454,7 +466,7 @@ def main() -> int:
     copy_tree(source_docs / "assets", args.output / "assets")
     shutil.copy2(args.viewer / "home-zh.md", args.output / "zh" / "latest" / "README.md")
     shutil.copy2(args.viewer / "home-en.md", args.output / "en" / "latest" / "README.md")
-    copy_docsify(args.viewer, args.output)
+    copy_docsify(args.viewer, args.output, args.branding)
 
     images = ImageStore(args.output)
     for language in ("zh", "en"):

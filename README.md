@@ -1,5 +1,9 @@
 # AGW
 
+<p align="center">
+  <img src="branding/agw-logo.svg" width="320" alt="AGW — Secure API Gateway">
+</p>
+
 AGW 是一个独立开放的 API 网关发行版，基于 [Apache APISIX](https://github.com/apache/apisix)，使用[Tongsuo（铜锁）](https://github.com/Tongsuo-Project/Tongsuo) 构建，
 当前只交付两个 `linux/amd64` 容器镜像：
 
@@ -16,7 +20,7 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 
 ## 交付标签
 
-`VERSION` 当前为 `3.19.0-agw.15`，对应上游 `3.19.0`。每个变体有三个标签。
+`VERSION` 当前为 `3.19.0-agw.16`，对应上游 `3.19.0`。每个变体有三个标签。
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
@@ -27,11 +31,11 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.19.0-agw.15-openeuler
+ghcr.io/scott-wong/agw:3.19.0-agw.16-openeuler
 ghcr.io/scott-wong/agw:3.19.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.19.0-agw.15-ubuntu
+ghcr.io/scott-wong/agw:3.19.0-agw.16-ubuntu
 ghcr.io/scott-wong/agw:3.19.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
@@ -141,8 +145,9 @@ AGW 不对标 OpenSSL 的 CVE 修复状态；发布清单记录
 builder 中从 `apache/apisix-dashboard` master 的精确 commit 源码构建，执行
 lint、上游单测和生产构建；构建 commit、归档 SHA256 与来源写入镜像标签和
 `/usr/local/share/agw/dashboard-source.json`。页面标题、静态 `<head>` 和动态
-`document.title` 均为 `AGW Dashboard`，Logo/favicon、右上角 Docs 与翻译 CTA
-不进入发布包。
+`document.title` 均为 `AGW Dashboard`；AGW SVG Logo、SVG favicon 和
+multi-resolution `favicon.ico` 随 Dashboard 与文档打包。右上角文档入口指向
+本地 `/ui/docs/`，上游站点外链与翻译 CTA 不进入发布包。
 
 AGW Dashboard 的 SSL 详情页会归一化 Admin API 隐藏私钥后缺失的 `keys` 字段，
 避免带 `certs` 的 SSL 对象详情页抛出
@@ -179,11 +184,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.15-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.15-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.15-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.15-ubuntu
-make verify-etcd IMAGE=agw:3.19.0-agw.15-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.16-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.16-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.16-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.16-ubuntu
+make verify-etcd IMAGE=agw:3.19.0-agw.16-openeuler
 ```
 
 常用入口：
@@ -213,6 +218,9 @@ etcd root 用户和认证启用由一次性 `etcd-init` Compose 服务完成，�
 两个镜像都内置 AGW 文档，Dashboard header 的“文档”按钮打开
 `/ui/docs/`。文档来源为当前 baseline 的 Apache APISIX 文档，构建时完成
 AGW 品牌替换、产品内容过滤和外部图片本地化；默认中文，可切换到 English。
+
+品牌源文件、深浅色 Logo、透明图标、favicon 和 GitHub 社交预览位于
+[`branding/`](branding/README.md)。
 
 ## CI 与发布
 

@@ -2,11 +2,13 @@ diff --git a/index.html b/index.html
 index 3557107..7b5dfdc 100644
 --- a/index.html
 +++ b/index.html
-@@ -2,9 +2,8 @@
+@@ -2,9 +2,10 @@
  <html lang="en">
    <head>
      <meta charset="UTF-8" />
 -    <link rel="icon" type="image/svg+xml" href="/src/assets/apisix-logo.svg" />
++    <link rel="icon" type="image/svg+xml" href="/ui/agw-favicon.svg" />
++    <link rel="alternate icon" href="/ui/favicon.ico" sizes="any" />
      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 -    <title>Apache APISIX Dashboard</title>
 +    <title>AGW Dashboard</title>
@@ -178,12 +180,13 @@ diff --git a/src/locales/de/common.json b/src/locales/de/common.json
 index a9b04ac..3c1cfcc 100644
 --- a/src/locales/de/common.json
 +++ b/src/locales/de/common.json
-@@ -1,7 +1,6 @@
+@@ -1,7 +1,7 @@
  {
    "apisix": {
 -    "dashboard": "APISIX Dashboard",
 -    "logo": "APISIX Logo"
-+    "dashboard": "AGW Dashboard"
++    "dashboard": "AGW Dashboard",
++    "logo": "AGW Logo"
    },
    "consumerGroups": {
      "singular": "Konsumenten-Gruppe"
@@ -199,12 +202,13 @@ diff --git a/src/locales/en/common.json b/src/locales/en/common.json
 index 4dac293..12ec8e2 100644
 --- a/src/locales/en/common.json
 +++ b/src/locales/en/common.json
-@@ -1,7 +1,6 @@
+@@ -1,7 +1,7 @@
  {
    "apisix": {
 -    "dashboard": "APISIX Dashboard",
 -    "logo": "APISIX Logo"
-+    "dashboard": "AGW Dashboard"
++    "dashboard": "AGW Dashboard",
++    "logo": "AGW Logo"
    },
    "consumerGroups": {
      "singular": "Consumer Group"
@@ -220,12 +224,13 @@ diff --git a/src/locales/es/common.json b/src/locales/es/common.json
 index effabf5..79d25c7 100644
 --- a/src/locales/es/common.json
 +++ b/src/locales/es/common.json
-@@ -1,7 +1,6 @@
+@@ -1,7 +1,7 @@
  {
    "apisix": {
 -    "dashboard": "Panel de APISIX",
 -    "logo": "Logo de APISIX"
-+    "dashboard": "AGW Dashboard"
++    "dashboard": "AGW Dashboard",
++    "logo": "Logotipo de AGW"
    },
    "consumerGroups": {
      "singular": "Grupo de Consumidores"
@@ -241,12 +246,13 @@ diff --git a/src/locales/tr/common.json b/src/locales/tr/common.json
 index f5cba54..ca15901 100644
 --- a/src/locales/tr/common.json
 +++ b/src/locales/tr/common.json
-@@ -1,7 +1,6 @@
+@@ -1,7 +1,7 @@
  {
    "apisix": {
 -    "dashboard": "APISIX Dashboard",
 -    "logo": "APISIX Logo"
-+    "dashboard": "AGW Dashboard"
++    "dashboard": "AGW Dashboard",
++    "logo": "AGW Logosu"
    },
    "consumerGroups": {
      "singular": "Consumer Grubu"
@@ -262,12 +268,13 @@ diff --git a/src/locales/zh/common.json b/src/locales/zh/common.json
 index de2767a..4c0417d 100644
 --- a/src/locales/zh/common.json
 +++ b/src/locales/zh/common.json
-@@ -1,7 +1,6 @@
+@@ -1,7 +1,7 @@
  {
    "apisix": {
 -    "dashboard": "APISIX Dashboard",
 -    "logo": "APISIX Logo"
-+    "dashboard": "AGW 控制台"
++    "dashboard": "AGW 控制台",
++    "logo": "AGW Logo"
    },
    "consumerGroups": {
      "singular": "消费者组"

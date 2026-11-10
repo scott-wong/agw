@@ -10,6 +10,7 @@ DASHBOARD_SHA="${DASHBOARD_SHA:?缺少 DASHBOARD_SHA}"
 DASHBOARD_SOURCE_SHA256="${DASHBOARD_SOURCE_SHA256:?缺少 DASHBOARD_SOURCE_SHA256}"
 DISTFILES="${DISTFILES:-/opt/agw/distfiles}"
 PATCH_DIR="${PATCH_DIR:-/opt/agw/patches/apisix-dashboard}"
+BRANDING_DIR="${BRANDING_DIR:-/opt/agw/branding}"
 WORK="${WORK:-/tmp/agw-dashboard-build}"
 OUTPUT="${OUTPUT:-/opt/agw/ui-dist}"
 PROVENANCE_OUTPUT="${PROVENANCE_OUTPUT:-/opt/agw/dashboard-provenance.json}"
@@ -46,6 +47,16 @@ tar -xzf "$archive" --strip-components=1 -C "$WORK"
     patch -p1 -E --batch --forward < "$patch_file"
   done
 
+  test -f "$BRANDING_DIR/agw-mark.svg"
+  test -f "$BRANDING_DIR/agw-mark-dark.svg"
+  test -f "$BRANDING_DIR/agw-favicon.svg"
+  test -f "$BRANDING_DIR/favicon.ico"
+  install -d src/assets public
+  install -m 0644 "$BRANDING_DIR/agw-mark.svg" src/assets/agw-mark.svg
+  install -m 0644 "$BRANDING_DIR/agw-mark-dark.svg" src/assets/agw-mark-dark.svg
+  install -m 0644 "$BRANDING_DIR/agw-favicon.svg" public/agw-favicon.svg
+  install -m 0644 "$BRANDING_DIR/favicon.ico" public/favicon.ico
+
   rm -f src/assets/apisix-logo.svg
   test ! -e src/assets/apisix-logo.svg
   ! grep -R -q -F 'https://apisix.apache.org/docs/' index.html src
@@ -64,6 +75,10 @@ tar -xzf "$archive" --strip-components=1 -C "$WORK"
 
   test -f dist/index.html
   grep -Fq '<title>AGW Dashboard</title>' dist/index.html
+  grep -Fq 'href="/ui/agw-favicon.svg"' dist/index.html
+  test -f dist/agw-favicon.svg
+  test -f dist/favicon.ico
+  grep -R -I -q -F '16AFC4' dist/assets
   test -z "$(find dist -iname '*apisix*logo*' -print -quit)"
   ! grep -R -q -F 'https://apisix.apache.org/docs/' dist
   ! grep -R -q -F 'https://github.com/apache/apisix-dashboard/issues/1407' dist

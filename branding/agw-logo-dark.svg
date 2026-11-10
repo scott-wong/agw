@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 170" role="img" aria-labelledby="agw-logo-dark-title agw-logo-dark-desc">
+  <title id="agw-logo-dark-title">AGW — Secure API Gateway</title>
+  <desc id="agw-logo-dark-desc">The AGW gateway mark and wordmark for dark backgrounds.</desc>
+  <g transform="translate(20 18)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 3 L105 29 L105 87 L58 113 L11 87 L11 29 Z" stroke="#F4F7FB" stroke-width="5"/>
+    <path d="M22 39 H43 L60 57 H83" stroke="#16AFC4" stroke-width="5"/>
+    <path d="M22 57 H83" stroke="#16AFC4" stroke-width="5"/>
+    <path d="M22 75 H43 L60 57" stroke="#16AFC4" stroke-width="5"/>
+    <path d="M83 57 H96" stroke="#F4F7FB" stroke-width="5"/>
+    <circle cx="60" cy="57" r="7" fill="#16AFC4" stroke="none"/>
+    <path d="M75 31 V83" stroke="#F4F7FB" stroke-width="4"/>
+  </g>
+  <text x="155" y="102" font-family="Helvetica Neue, Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="5" fill="#F4F7FB">AGW</text>
+  <text x="160" y="132" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="600" letter-spacing="3" fill="#9FC2D2">SECURE API GATEWAY</text>
+</svg>

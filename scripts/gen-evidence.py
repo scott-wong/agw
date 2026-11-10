@@ -306,9 +306,10 @@ APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开
 `{env['DASHBOARD_PNPM_VERSION']}` 执行 lint、单测和生产构建。两个镜像变体共享同一
 commit；同版本在不同日期重新构建时可使用不同 master。
 
-AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
-APISIX Logo/favicon、语言菜单翻译 CTA、恢复指向本地 `/ui/docs/` 的文档入口，
-并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由 `docs-builder` 从当前
+AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，替换
+APISIX Logo/favicon 为 AGW SVG 品牌资产，移除语言菜单翻译 CTA、恢复指向本地
+`/ui/docs/` 的文档入口，并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由
+`docs-builder` 从当前
 APISIX `{env['APISIX_TAG']}` 源码归档构建，过滤非产品内容、完成 AGW 品牌替换，
 并本地化可获取的外部图片。
 
@@ -382,12 +383,12 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
 - OpenResty、APISIX CLI、捆绑 PCRE2/zlib 与 `lua-resty-limit-traffic` 可加载。
 - Admin UI 由 Dashboard 源码构建，入口与 JavaScript/CSS 静态资源已打包；`/ui/`、
   静态资源和 SPA fallback 可通过 Admin API 端口访问。
-- 页面 `<title>` 与动态标题为 `AGW Dashboard`；Logo/favicon、翻译 CTA 不进入构建
-  产物；文档入口指向本地 `/ui/docs/`。
+- 页面 `<title>` 与动态标题为 `AGW Dashboard`；AGW Logo/favicon 随包交付，
+  翻译 CTA 不进入构建产物；文档入口指向本地 `/ui/docs/`。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
 - Admin UI 的 SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
-- Playwright 在 APISIX 3.19.0 上验证桌面/移动品牌、无 Logo/翻译 CTA、本地文档、
-  路由详情和 SSL 详情页；文档默认中文并支持 English。
+- Playwright 在 APISIX 3.19.0 上验证桌面/移动 AGW 品牌与 Logo、无翻译 CTA、
+  本地文档、路由详情和 SSL 详情页；文档默认中文并支持 English。
 - 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
 - TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。
 - Server Header 冒烟在容器内规范化夹具权限，并拒绝 worker 初始化错误。

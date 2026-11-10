@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" role="img" aria-labelledby="agw-social-title agw-social-desc">
+  <title id="agw-social-title">AGW — Secure. Open. Reliable.</title>
+  <desc id="agw-social-desc">AGW identity on a deep navy field with electric cyan network accents.</desc>
+  <defs>
+    <radialGradient id="glow" cx="78%" cy="38%" r="55%">
+      <stop offset="0" stop-color="#16AFC4" stop-opacity="0.38"/>
+      <stop offset="0.52" stop-color="#16AFC4" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#163653" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0 H0 V48" fill="none" stroke="#F4F7FB" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <symbol id="mark" viewBox="0 0 120 120">
+      <g transform="translate(4 2)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M58 3 L105 29 L105 87 L58 113 L11 87 L11 29 Z" stroke="#F4F7FB" stroke-width="6"/>
+        <path d="M22 39 H43 L60 57 H83" stroke="#16AFC4" stroke-width="6"/>
+        <path d="M22 57 H83" stroke="#16AFC4" stroke-width="6"/>
+        <path d="M22 75 H43 L60 57" stroke="#16AFC4" stroke-width="6"/>
+        <path d="M83 57 H96" stroke="#F4F7FB" stroke-width="6"/>
+        <circle cx="60" cy="57" r="8" fill="#16AFC4" stroke="none"/>
+        <path d="M75 31 V83" stroke="#F4F7FB" stroke-width="5"/>
+      </g>
+    </symbol>
+  </defs>
+  <rect width="1280" height="640" fill="#163653"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <g transform="translate(250 154) scale(1.36)">
+    <use href="#mark" width="120" height="120"/>
+    <text x="135" y="82" font-family="Helvetica Neue, Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="5" fill="#F4F7FB">AGW</text>
+    <text x="140" y="112" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" font-weight="600" letter-spacing="3" fill="#9FC2D2">SECURE API GATEWAY</text>
+  </g>
+  <text x="640" y="480" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" font-size="32" font-weight="600" letter-spacing="2" fill="#16AFC4">SECURE. OPEN. RELIABLE.</text>
+  <text x="640" y="534" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="400" letter-spacing="1.5" fill="#9FC2D2">BASED ON APACHE APISIX · TONGSUO TLS · SM2 / SM3 / SM4</text>
+</svg>

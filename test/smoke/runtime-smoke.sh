@@ -60,6 +60,9 @@ grep -q 'for i = 2, #value.certs do' /usr/local/apisix/apisix/plugins/gm.lua
 echo "[runtime] bundled APISIX Admin UI"
 test -f /usr/local/apisix/ui/index.html
 grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
+grep -Fq 'href="/ui/agw-favicon.svg"' /usr/local/apisix/ui/index.html
+test -f /usr/local/apisix/ui/agw-favicon.svg
+test -f /usr/local/apisix/ui/favicon.ico
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.css' -print -quit)"
 ! grep -R -I -q -F 'https://apisix.apache.org/docs/' /usr/local/apisix/ui
@@ -70,6 +73,11 @@ test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.css' -print -quit)"
 ! grep -R -I -q -F 'Help Us Translate' /usr/local/apisix/ui
 test ! -e /usr/local/apisix/ui/assets/apisix-logo.svg
 ! grep -R -I -q -F 'Apache APISIX Dashboard' /usr/local/apisix/ui
+test -f /usr/local/apisix/ui/docs/assets/branding/agw-logo.svg
+test -f /usr/local/apisix/ui/docs/assets/branding/agw-mark.svg
+test -f /usr/local/apisix/ui/docs/assets/branding/agw-favicon.svg
+test -f /usr/local/apisix/ui/docs/assets/branding/favicon.ico
+grep -Fq 'assets/branding/agw-mark.svg' /usr/local/apisix/ui/docs/index.html
 test -f /usr/local/share/agw/dashboard-source.json
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"

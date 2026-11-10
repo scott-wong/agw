@@ -16,6 +16,9 @@ bash -c 'source scripts/baseline.env'
 echo "[static] generated evidence"
 python3 scripts/gen-evidence.py --check
 
+echo "[static] brand assets"
+python3 scripts/verify-brand-assets.py
+
 echo "[static] changelog"
 python3 scripts/changelog.py check
 

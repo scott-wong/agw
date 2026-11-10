@@ -89,6 +89,9 @@ grep -Fxiq $'Cache-Control: no-store\r' /tmp/agw-ui-headers.txt
 test "$(grep -ci '^Server:' /tmp/agw-ui-headers.txt || true)" -eq 1
 grep -Fxq $'Server: agw-etcd\r' /tmp/agw-ui-headers.txt
 grep -Fq '<title>AGW Dashboard</title>' /tmp/agw-ui-index.html
+grep -Fq 'href="/ui/agw-favicon.svg"' /tmp/agw-ui-index.html
+curl -fsS -o /dev/null http://127.0.0.1:19180/ui/agw-favicon.svg
+curl -fsS -o /dev/null http://127.0.0.1:19180/ui/favicon.ico
 
 asset="$(grep -o 'src="/ui/assets/[^"]*\.js"' /tmp/agw-ui-index.html |
   sed -n '1s|^src="/ui/||;1s|"$||;1p')"

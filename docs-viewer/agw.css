@@ -30,6 +30,19 @@ body .sidebar {
   padding-top: 34px;
 }
 
+body .sidebar > h1 .app-name-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+body .sidebar > h1 .app-name-link img {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .agw-docs-lang {
     top: 8px;

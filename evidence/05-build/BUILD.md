@@ -27,9 +27,10 @@ APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开
 `12.16.1` 执行 lint、单测和生产构建。两个镜像变体共享同一
 commit；同版本在不同日期重新构建时可使用不同 master。
 
-AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
-APISIX Logo/favicon、语言菜单翻译 CTA、恢复指向本地 `/ui/docs/` 的文档入口，
-并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由 `docs-builder` 从当前
+AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboard`，替换
+APISIX Logo/favicon 为 AGW SVG 品牌资产，移除语言菜单翻译 CTA、恢复指向本地
+`/ui/docs/` 的文档入口，并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由
+`docs-builder` 从当前
 APISIX `3.19.0` 源码归档构建，过滤非产品内容、完成 AGW 品牌替换，
 并本地化可获取的外部图片。
 

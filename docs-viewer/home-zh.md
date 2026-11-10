@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="/ui/docs/assets/branding/agw-logo.svg" alt="AGW — Secure API Gateway" width="280">
+</p>
+
 # AGW 文档
 
 AGW 是一个独立开放的 API 网关发行版，提供路由、服务发现、插件、

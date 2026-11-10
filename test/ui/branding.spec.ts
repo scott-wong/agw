@@ -62,7 +62,13 @@ test('desktop branding, title, logo, docs, and translation CTA', async ({
 
   await expect(page).toHaveTitle('Routes - AGW Dashboard');
   await expect(page.getByText('AGW Dashboard', { exact: true })).toBeVisible();
-  await expect(page.locator('link[rel="icon"]')).toHaveCount(0);
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute(
+    'href',
+    /agw-favicon\.svg/
+  );
+  await expect(page.getByAltText('AGW Logo').first()).toBeVisible();
+  expect((await page.request.get('/ui/agw-favicon.svg')).status()).toBe(200);
+  expect((await page.request.get('/ui/favicon.ico')).status()).toBe(200);
   await expect(
     page.locator('img[src*="apisix-logo"], img[alt*="APISIX Logo"]')
   ).toHaveCount(0);
@@ -94,6 +100,14 @@ test('local documentation is packaged and defaults to Chinese', async ({
   await expect(page).toHaveTitle(/AGW 文档/);
   await expect(page.locator('body')).toContainText('快速导航');
   await expect(page).toHaveURL(/#\/zh\/latest\/README/);
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute(
+    'href',
+    /assets\/branding\/agw-favicon\.svg/
+  );
+  await expect(page.locator('.sidebar h1 img[src*="agw-mark"]')).toBeVisible();
+  await expect(
+    page.locator('.markdown-section img[src*="agw-logo"]')
+  ).toBeVisible();
   expect(
     (await page.request.get('/ui/docs/zh/latest/plugins/_sidebar.md')).status()
   ).toBe(404);

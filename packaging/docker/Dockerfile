@@ -21,6 +21,7 @@ ARG NPM_REGISTRY=
 WORKDIR /opt/agw
 RUN apk add --no-cache bash ca-certificates python3 tar
 COPY docs-viewer/ /opt/agw/docs-viewer/
+COPY branding/ /opt/agw/branding/
 COPY scripts/baseline.env scripts/build-apisix-docs.py scripts/build-apisix-docs.sh /opt/agw/scripts/
 COPY distfiles/apisix-*.tar.gz /opt/agw/distfiles/
 RUN if [ -n "$NPM_REGISTRY" ]; then \
@@ -44,6 +45,7 @@ WORKDIR /opt/agw
 RUN apk add --no-cache bash ca-certificates coreutils git patch python3
 
 COPY scripts/baseline.env scripts/build-apisix-dashboard.sh /opt/agw/scripts/
+COPY branding/ /opt/agw/branding/
 COPY distfiles/apisix-dashboard-*.tar.gz distfiles/apisix-dashboard-*.json /opt/agw/distfiles/
 COPY patches/apisix-dashboard/ /opt/agw/patches/apisix-dashboard/
 
@@ -116,7 +118,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.19.0-agw.15
+ARG AGW_VERSION=3.19.0-agw.16
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -166,7 +168,7 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.19.0-agw.15
+ARG AGW_VERSION=3.19.0-agw.16
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 

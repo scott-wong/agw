@@ -33,9 +33,9 @@ APISIX 源码发布包不包含已构建的 Admin UI。每次 workflow 开始时
 SHA256。`dashboard-builder` 在 Node `22-alpine` 中安装 pnpm `12.16.1`，执行
 frozen install、lint、上游单测和生产构建；两个镜像变体共享同一 commit。
 
-AGW 源码补丁把页面标题和动态 `document.title` 统一为 `AGW Dashboard`，移除
-APISIX Logo/favicon、右上角 Docs 和翻译 CTA，并保留 SSL 详情页对隐藏私钥字段
-的兼容修复。
+AGW 源码补丁把页面标题和动态 `document.title` 统一为 `AGW Dashboard`，用
+AGW 深浅色图标替换上游 Logo/favicon，恢复指向本地 `/ui/docs/` 的入口，移除
+翻译 CTA，并保留 SSL 详情页对隐藏私钥字段的兼容修复。
 
 ## 运行时
 
@@ -85,8 +85,9 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 - 清理 OpenResty 安装产生的头文件、静态库和 pkgconfig；
 - 运行 `apisix init` 与 `openresty -t`；
 - 断言 CLI 默认 `Server` 头为 `agw`，且默认插件表包含 `gm`；
-- 从 `dashboard-builder` 复制 UI，并断言 AGW 标题、JavaScript/CSS 静态资源、
-  Dashboard 来源文件存在，且 Logo/favicon、Docs、翻译 CTA 不进入镜像；
+- 从 `dashboard-builder` 复制 UI，并断言 AGW 标题、SVG Logo、SVG/ICO favicon、
+  JavaScript/CSS 静态资源、Dashboard 来源文件和本地文档存在，且翻译 CTA 不进入
+  镜像；
 - 把 `logs` 与五个 `*_temp` 目录授予 `65534:65534`，对应 `nobody` worker；
 - 写入镜像来源、运行用户与 Tongsuo CVE 对标状态。
 
@@ -124,5 +125,5 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 
 ## 版本不可变性
 
-`VERSION` 是唯一事实源，当前为 `3.19.0-agw.15`。Git tag 必须是
+`VERSION` 是唯一事实源，当前为 `3.19.0-agw.16`。Git tag 必须是
 `v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。

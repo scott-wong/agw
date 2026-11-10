@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.16] - 2026-11-10
+
+### Added
+- 新增 AGW Secure Gateway SVG 品牌资产，覆盖深浅色 Logo、透明图标与 GitHub 社交预览。
+- 新增 SVG favicon 和包含 16/32/48/64/128/256 像素图像的多分辨率 `favicon.ico`。
+
+### Changed
+- Dashboard header、内置文档侧边栏与文档首页统一使用新的 AGW 品牌图标。
+- README 和镜像内品牌校验改用新资产，并增加 SVG、PNG 与 ICO 结构校验。
+
 ## [3.19.0-agw.15] - 2026-11-10
 
 ### Changed
@@ -90,6 +100,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.16]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.16
 [3.19.0-agw.15]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.15
 [3.19.0-agw.14]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.14
 [3.19.0-agw.13]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.13

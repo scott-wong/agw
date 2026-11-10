@@ -71,10 +71,21 @@ test -f /usr/local/apisix/conf/nginx.conf
 grep -Fq 'location ^~ /ui/docs/' /usr/local/apisix/conf/nginx.conf
 test -f /usr/local/apisix/ui/index.html
 grep -Fq '<title>AGW Dashboard</title>' /usr/local/apisix/ui/index.html
+grep -Fq 'href="/ui/agw-favicon.svg"' /usr/local/apisix/ui/index.html
+test -f /usr/local/apisix/ui/agw-favicon.svg
+test -f /usr/local/apisix/ui/favicon.ico
 test -n "$(find /usr/local/apisix/ui/assets -type f -name '*.js' -print -quit)"
 test -f /usr/local/apisix/ui/docs/index.html
 grep -Fq '<title>AGW 文档</title>' /usr/local/apisix/ui/docs/index.html
 grep -Fq 'relativePath: true' /usr/local/apisix/ui/docs/index.html
+grep -Fq 'assets/branding/agw-favicon.svg' /usr/local/apisix/ui/docs/index.html
+grep -Fq 'assets/branding/agw-mark.svg' /usr/local/apisix/ui/docs/index.html
+test -f /usr/local/apisix/ui/docs/assets/branding/agw-logo.svg
+test -f /usr/local/apisix/ui/docs/assets/branding/agw-mark.svg
+test -f /usr/local/apisix/ui/docs/assets/branding/agw-favicon.svg
+test -f /usr/local/apisix/ui/docs/assets/branding/favicon.ico
+grep -Fq 'assets/branding/agw-logo.svg' /usr/local/apisix/ui/docs/zh/latest/README.md
+grep -Fq 'assets/branding/agw-logo.svg' /usr/local/apisix/ui/docs/en/latest/README.md
 test -f /usr/local/apisix/ui/docs/zh/latest/README.md
 test -f /usr/local/apisix/ui/docs/en/latest/README.md
 test -f /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
