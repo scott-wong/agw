@@ -169,7 +169,9 @@ test('local documentation is packaged and defaults to Chinese', async ({
   await expect(
     page.locator('.sidebar-nav a').filter({ hasText: 'AGW 安装指南' })
   ).toBeVisible();
-  await expect(page.locator('.sidebar-nav')).not.toContainText('AGW Dashboard');
+  await expect(
+    page.locator('.sidebar-nav a[href="#/zh/latest/dashboard"]')
+  ).toBeVisible();
 
   await page.goto('/ui/docs/#/en/latest/README');
   await expect(page.locator('body')).toContainText('Quick Links');
