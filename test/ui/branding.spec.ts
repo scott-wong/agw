@@ -167,7 +167,7 @@ test('local documentation is packaged and defaults to Chinese', async ({
   await expect(page).toHaveURL(/#\/zh\/latest\/plugins\/batch-requests/);
   await expect(page.locator('.markdown-section')).toContainText('batch-requests');
   await expect(
-    page.locator('.sidebar-nav a').filter({ hasText: 'Installation Guide' })
+    page.locator('.sidebar-nav a').filter({ hasText: 'AGW 安装指南' })
   ).toBeVisible();
   await expect(page.locator('.sidebar-nav')).not.toContainText('AGW Dashboard');
 
