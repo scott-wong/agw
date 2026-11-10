@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [3.19.0-agw.15] - 2026-11-10
+
+### Changed
+- 中文文档侧边栏使用文档中文标题，插件名和 API 术语等专有名词保持原文。
+- 移除 Docusaurus 的 Tabs/TabItem 导入和组件标签，保留全部示例内容。
+
 ## [3.19.0-agw.14] - 2026-11-09
 
 ### Changed
@@ -84,6 +90,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.19.0-agw.15]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.15
 [3.19.0-agw.14]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.14
 [3.19.0-agw.13]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.13
 [3.19.0-agw.12]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.12

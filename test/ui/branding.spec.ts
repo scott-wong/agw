@@ -104,7 +104,20 @@ test('local documentation is packaged and defaults to Chinese', async ({
   await expect(
     page.locator('.sidebar-nav a[href*="/getting-started/README"]')
   ).toHaveCount(0);
+  await expect(page.locator('.sidebar-nav')).toContainText('配置路由');
+  await expect(page.locator('.sidebar-nav')).toContainText('AGW 安装指南');
+  await expect(page.locator('.sidebar-nav')).not.toContainText(
+    'Installation Guide'
+  );
   await expect(page.locator('body')).not.toContainText('本教程由');
+
+  await page.goto('/ui/docs/#/zh/latest/installation-guide');
+  await expect(page.locator('body')).not.toContainText(
+    "import Tabs from '@theme/Tabs';"
+  );
+  await expect(page.locator('body')).not.toContainText('<Tabs');
+  await expect(page.locator('body')).not.toContainText('<TabItem');
+  await page.goto('/ui/docs/#/zh/latest/README');
 
   const quickStartLink = page
     .locator('.markdown-section a')

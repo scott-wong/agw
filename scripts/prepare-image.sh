@@ -83,6 +83,9 @@ test ! -e /usr/local/apisix/ui/docs/zh/latest/getting-started/README.md
 test ! -e /usr/local/apisix/ui/docs/en/latest/getting-started/README.md
 grep -Fq '](/zh/latest/' /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
 grep -Fq '](/en/latest/' /usr/local/apisix/ui/docs/en/latest/_sidebar.md
+grep -Fq '[配置路由]' /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
+grep -Fq '[AGW 安装指南]' /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
+! grep -Fq '[Installation Guide]' /usr/local/apisix/ui/docs/zh/latest/_sidebar.md
 grep -Fq 'src="/ui/docs/assets/images/' \
   /usr/local/apisix/ui/docs/zh/latest/architecture-design/apisix.md
 ! grep -R -I -q -E '\]\(/ui/docs/(zh|en)/latest/' /usr/local/apisix/ui/docs
@@ -94,6 +97,12 @@ grep -Fq 'src="/ui/docs/assets/images/' \
 ! grep -R -I -q -F '本教程由 [API7.ai]' /usr/local/apisix/ui/docs
 ! grep -R -I -q -F 'The Getting Started tutorials are contributed by [API7.ai]' \
   /usr/local/apisix/ui/docs
+! grep -R -I -q -F "import Tabs from '@theme/Tabs';" /usr/local/apisix/ui/docs
+! grep -R -I -q -F "import TabItem from '@theme/TabItem';" /usr/local/apisix/ui/docs
+! grep -R -I -q -E '^<Tabs([[:space:]>]|$)' /usr/local/apisix/ui/docs
+! grep -R -I -q -F '<TabItem' /usr/local/apisix/ui/docs
+! grep -R -I -q -F '</Tabs>' /usr/local/apisix/ui/docs
+! grep -R -I -q -F '</TabItem>' /usr/local/apisix/ui/docs
 test ! -e /usr/local/apisix/ui/docs/assets/images/apisix.png
 test ! -e /usr/local/apisix/ui/docs/assets/images/apisix-seed.svg
 test ! -e /usr/local/apisix/ui/docs/assets/images/apache.png

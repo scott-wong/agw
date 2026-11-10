@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import html
+import http.client
 import json
 import mimetypes
 import re
@@ -33,6 +34,16 @@ ATTRIBUTION_RE = re.compile(
     r"\[API7\.ai\]\(https://api7\.ai/?\)\."
     r")\s*$\n?",
     re.MULTILINE,
+)
+DOCUSAURUS_IMPORT_RE = re.compile(
+    r"^import (?:Tabs|TabItem) from '@theme/(?:Tabs|TabItem)';\s*$\n?",
+    re.MULTILINE,
+)
+DOCUSAURUS_TABS_RE = re.compile(
+    r"^<Tabs\b.*?>\s*$\n?"
+    r"|^</Tabs>\s*$\n?"
+    r"|^</?TabItem\b.*?>\s*$\n?",
+    re.MULTILINE | re.DOTALL,
 )
 BRAND_ASSETS = {
     "MA.jpeg",
@@ -86,6 +97,19 @@ def strip_frontmatter(text: str) -> str:
         return text
     end = text.find("\n---\n", 4)
     return text[end + 5 :] if end != -1 else text
+
+
+def frontmatter_title(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        return ""
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return ""
+    for line in text[4:end].splitlines():
+        if line.startswith("title:"):
+            return line.removeprefix("title:").strip().strip("\"'")
+    return ""
 
 
 def beand_text(text: str) -> str:
@@ -165,7 +189,13 @@ class ImageStore:
             with urllib.request.urlopen(request, timeout=20) as response:
                 content = response.read()
                 content_type = response.headers.get_content_type()
-        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+        except (
+            urllib.error.URLError,
+            http.client.HTTPException,
+            TimeoutError,
+            ValueError,
+            OSError,
+        ):
             self.manifest[url] = {"status": "missing"}
             return None
 
@@ -312,6 +342,11 @@ def transform_code(segment: str) -> str:
     return segment
 
 
+def remove_docusaurus_markup(segment: str) -> str:
+    segment = DOCUSAURUS_IMPORT_RE.sub("", segment)
+    return DOCUSAURUS_TABS_RE.sub("", segment)
+
+
 def transform_markdown(path: Path, output: Path, images: ImageStore) -> None:
     text = strip_frontmatter(path.read_text(encoding="utf-8"))
     page_rel = path.relative_to(output).as_posix()
@@ -327,13 +362,20 @@ def transform_markdown(path: Path, output: Path, images: ImageStore) -> None:
     text = clean_community_lines(text)
     parts = CODE_RE.split(text)
     for index in range(0, len(parts), 2):
+        parts[index] = remove_docusaurus_markup(parts[index])
         parts[index] = transform_segment(parts[index], output, page_rel, images)
     for index in range(1, len(parts), 2):
         parts[index] = transform_code(parts[index])
     path.write_text("".join(parts), encoding="utf-8")
 
 
-def sidebar_items(items: list[Any], output: Path, language: str, depth: int = 0) -> list[str]:
+def sidebar_items(
+    items: list[Any],
+    output: Path,
+    source_dir: Path,
+    language: str,
+    depth: int = 0,
+) -> list[str]:
     lines: list[str] = []
     indent = "  " * depth
     for item in items:
@@ -348,21 +390,32 @@ def sidebar_items(items: list[Any], output: Path, language: str, depth: int = 0)
             target = output / language / "latest" / f"{doc}.md"
             if not target.is_file():
                 continue
-            label = beand_text(item.get("label") or Path(doc).stem.replace("-", " ").title())
+            label = item.get("label")
+            if not label and language == "zh":
+                label = frontmatter_title(source_dir / f"{doc}.md")
+            if not label:
+                label = Path(doc).stem.replace("-", " ").title()
+            label = beand_text(label)
             lines.append(f"{indent}- [{label}](/{language}/latest/{doc}.md)")
         elif item.get("type") == "category":
-            nested = sidebar_items(item.get("items", []), output, language, depth + 1)
+            nested = sidebar_items(
+                item.get("items", []),
+                output,
+                source_dir,
+                language,
+                depth + 1,
+            )
             if nested:
                 lines.append(f"{indent}- **{beand_text(item.get('label', '更多'))}**")
                 lines.extend(nested)
     return lines
 
 
-def write_sidebar(config: Path, output: Path, language: str) -> None:
+def write_sidebar(config: Path, output: Path, source_dir: Path, language: str) -> None:
     data = json.loads(config.read_text(encoding="utf-8"))
     title = "AGW 文档" if language == "zh" else "AGW Documentation"
     lines = [f"- [{title}](/{language}/latest/README.md)"]
-    lines.extend(sidebar_items(data.get("sidebar", []), output, language))
+    lines.extend(sidebar_items(data.get("sidebar", []), output, source_dir, language))
     (output / language / "latest" / "_sidebar.md").write_text(
         "\n".join(lines) + "\n", encoding="utf-8"
     )
@@ -412,7 +465,12 @@ def main() -> int:
             if path.name == "_sidebar.md":
                 continue
             transform_markdown(path, args.output, images)
-        write_sidebar(source_docs / language / "latest" / "config.json", args.output, language)
+        write_sidebar(
+            source_docs / language / "latest" / "config.json",
+            args.output,
+            source_docs / language / "latest",
+            language,
+        )
     images.write_manifest()
 
     for name in ("LICENSE", "NOTICE"):
