@@ -8,7 +8,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 
 | 项 | 版本/tag/口径 | commit 或 SHA256 |
 |---|---|---|
-| APISIX | 3.19.0 | `473043623c161966f3f6ef4e8f12d2d8667a12d2` |
+| APISIX | 3.20.0 | `bc1e687fdb82883f86d1bca9fa4fbd6bb433682b` |
 | APISIX Dashboard | `apache/apisix-dashboard:master` | 每次构建解析并记录 commit |
 | OpenResty | 1.31.8.1 | `265baf62de60397452f306d61b168ab2c1809d41` |
 | Tongsuo | 8.5.0 | `80cfbe3eb194a4d30da90742273c305ad4d096be` |
@@ -39,6 +39,6 @@ OpenResty bundle 中的同名组件。
 | 变体 | 固定引用 |
 |---|---|
 | openEuler | `quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e` |
-| Ubuntu | `ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852` |
-| Admin UI builder | `node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202`（amd64 `sha256:947e5454e08bfe0b8ddda604915ad76275276c774f47da90d0137252c793a778`） |
+| Ubuntu | `ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8` |
+| Admin UI builder | `node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a`（amd64 `sha256:12f54cafa58d0e96554ae05871e29663ff7241836377dc9a7916449b8adb062c`） |
 | 测试 etcd | `quay.io/coreos/etcd:v3.5.21@sha256:a3ccd299377af4b9968d8cbaaf9722fe354297f11908f74a846075e1e5f4ee89` |

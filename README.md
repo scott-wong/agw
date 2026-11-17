@@ -20,7 +20,7 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 
 ## 交付标签
 
-`VERSION` 当前为 `3.19.0-agw.16`，对应上游 `3.19.0`。每个变体有三个标签。
+`VERSION` 当前为 `3.20.0-agw.1`，对应上游 `3.20.0`。每个变体有三个标签。
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
@@ -31,12 +31,12 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.19.0-agw.16-openeuler
-ghcr.io/scott-wong/agw:3.19.0-openeuler
+ghcr.io/scott-wong/agw:3.20.0-agw.1-openeuler
+ghcr.io/scott-wong/agw:3.20.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.19.0-agw.16-ubuntu
-ghcr.io/scott-wong/agw:3.19.0-ubuntu
+ghcr.io/scott-wong/agw:3.20.0-agw.1-ubuntu
+ghcr.io/scott-wong/agw:3.20.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
 
@@ -51,7 +51,7 @@ SHA256 和基础镜像 digest：
 
 | 项 | 锁定值 |
 |----|--------|
-| APISIX | `3.19.0` @ `473043623c161966f3f6ef4e8f12d2d8667a12d2` |
+| APISIX | `3.20.0` @ `bc1e687fdb82883f86d1bca9fa4fbd6bb433682b` |
 | APISIX Dashboard | `apache/apisix-dashboard` master，每次构建解析并记录精确 commit 与归档 SHA256 |
 | OpenResty | `1.31.8.1` |
 | Tongsuo | `8.5.0`（OpenSSL 3.5.4 内核，启用 TLCP/NTLS） |
@@ -184,11 +184,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.16-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.16-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.19.0-agw.16-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.19.0-agw.16-ubuntu
-make verify-etcd IMAGE=agw:3.19.0-agw.16-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.20.0-agw.1-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.20.0-agw.1-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.20.0-agw.1-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.20.0-agw.1-ubuntu
+make verify-etcd IMAGE=agw:3.20.0-agw.1-openeuler
 ```
 
 常用入口：

@@ -1,12 +1,12 @@
 {
   "product": "AGW",
-  "version": "3.19.0-agw.16",
+  "version": "3.20.0-agw.1",
   "numerator": 105,
   "numerator_detail": {
     "vendor_patch_added_lines": 105,
     "module_code_lines": 0
   },
-  "denominator": 99413,
-  "denominator_detail": "Apache APISIX 3.19.0 基线源码行数（lua/c/h）",
-  "ratio": 0.001056
+  "denominator": 102771,
+  "denominator_detail": "Apache APISIX 3.20.0 基线源码行数（lua/c/h）",
+  "ratio": 0.001022
 }

@@ -387,7 +387,7 @@ Trivy 结论分开陈述。AGW 不对标 OpenSSL 的 CVE 修复状态；发布�
   翻译 CTA 不进入构建产物；文档入口指向本地 `/ui/docs/`。
 - 默认 `Server: agw`；自定义值生效；`false` 完全抑制；非法值被 schema 拒绝。
 - Admin UI 的 SSL 详情页兼容 Admin API 隐藏私钥后缺失的 `keys` 字段。
-- Playwright 在 APISIX 3.19.0 上验证桌面/移动 AGW 品牌与 Logo、无翻译 CTA、
+- Playwright 在 APISIX {env['APISIX_TAG']} 上验证桌面/移动 AGW 品牌与 Logo、无翻译 CTA、
   本地文档、路由详情和 SSL 详情页；文档默认中文并支持 English。
 - 真实 APISIX 进程验证同 SNI 普通 TLS 与 TLCP 双栈。
 - TLCP ECC 与 ECDHE strict 的 GCM/CBC 套件完成 NTLSv1.1 握手并通过证书链校验。

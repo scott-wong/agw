@@ -1,6 +1,6 @@
 # AGW 网关发行版
 
-AGW 是一个独立开放的 API 网关发行版：以 Apache APISIX `3.19.0` 为上游，
+AGW 是一个独立开放的 API 网关发行版：以 Apache APISIX `3.20.0` 为上游，
 在 openEuler 与 Ubuntu 两个目标发行版内分别编译 OpenResty + Tongsuo 运行时，
 只交付两个 `linux/amd64` 容器镜像。
 

@@ -61,7 +61,7 @@ AGW 深浅色图标替换上游 Logo/favicon，恢复指向本地 `/ui/docs/` �
 `scripts/install-luarocks.sh` 用 OpenResty 的 LuaJIT 安装固定版本 LuaRocks。
 `scripts/install-apisix.sh`：
 
-1. 解压 APISIX `3.19.0`，按文件名顺序应用 `patches/apisix/*.patch`。
+1. 解压 APISIX `3.20.0`，按文件名顺序应用 `patches/apisix/*.patch`。
 2. 用 LuaRocks 构建依赖和 APISIX CLI。
 3. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
    `EVP_ripemd160` 的现实。
@@ -125,5 +125,5 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 
 ## 版本不可变性
 
-`VERSION` 是唯一事实源，当前为 `3.19.0-agw.16`。Git tag 必须是
+`VERSION` 是唯一事实源，当前为 `3.20.0-agw.1`。Git tag 必须是
 `v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。
