@@ -86,6 +86,7 @@ test -f /usr/local/apisix/ui/docs/assets/branding/agw-favicon.svg
 test -f /usr/local/apisix/ui/docs/assets/branding/favicon.ico
 grep -Fq 'assets/branding/agw-logo.svg' /usr/local/apisix/ui/docs/zh/latest/README.md
 grep -Fq 'assets/branding/agw-logo.svg' /usr/local/apisix/ui/docs/en/latest/README.md
+! grep -R -I -q -E 'BEGIN (RSA |EC |ENCRYPTED )?PRIVATE KEY' /usr/local/apisix/ui/docs
 test -f /usr/local/apisix/ui/docs/zh/latest/README.md
 test -f /usr/local/apisix/ui/docs/en/latest/README.md
 test -f /usr/local/apisix/ui/docs/zh/latest/_sidebar.md

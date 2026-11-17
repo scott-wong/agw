@@ -86,6 +86,12 @@ IMAGE_HTML_RE = re.compile(
 )
 LINK_MD_RE = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)\s]+)([^)]*)\)")
 CODE_RE = re.compile(r"(```.*?```|~~~.*?~~~|`[^`\n]+`)", re.DOTALL)
+PRIVATE_KEY_RE = re.compile(
+    r"-----BEGIN ((?:[A-Z0-9]+ )?PRIVATE KEY)-----"
+    r".*?"
+    r"-----END \1-----",
+    re.DOTALL,
+)
 
 
 def sha256(data: bytes) -> str:
@@ -129,6 +135,20 @@ def copy_tree(source: Path, target: Path) -> None:
         return {name for name in names if name in BLACKLIST_FILES or name in BRAND_ASSETS}
 
     shutil.copytree(source, target, ignore=ignore)
+
+
+def sanitize_private_keys(output: Path) -> int:
+    redacted = 0
+    suffixes = {".json", ".md", ".yaml", ".yml"}
+    for path in output.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in suffixes:
+            continue
+        text = path.read_text(encoding="utf-8")
+        sanitized, count = PRIVATE_KEY_RE.subn("REDACTED_PRIVATE_KEY", text)
+        if count:
+            path.write_text(sanitized, encoding="utf-8")
+            redacted += count
+    return redacted
 
 
 def local_asset_url(output: Path, page_rel: str, url: str) -> str | None:
@@ -467,6 +487,10 @@ def main() -> int:
     shutil.copy2(args.viewer / "home-zh.md", args.output / "zh" / "latest" / "README.md")
     shutil.copy2(args.viewer / "home-en.md", args.output / "en" / "latest" / "README.md")
     copy_docsify(args.viewer, args.output, args.branding)
+
+    redacted_keys = sanitize_private_keys(args.output)
+    if redacted_keys:
+        print(f"[docs] redacted {redacted_keys} example private key(s)")
 
     images = ImageStore(args.output)
     for language in ("zh", "en"):

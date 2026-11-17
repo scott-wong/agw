@@ -13,6 +13,7 @@
 - 继续沿用上游 3.20.0 使用的 API7 runtime `1.4.2` 模块与构建口径，同时保留
   AGW 的 Tongsuo TLCP/NTLS、SM2 双证书、可配置 `Server` 头和品牌化 Dashboard。
 - Ubuntu 24.04 与 Node 22 Alpine 基础镜像 digest 刷新到当前上游快照。
+- 打包文档时移除示例私钥，避免 Trivy secret 扫描阻断发布。
 - 继承上游 3.20.0 的兼容性变更，包括移除 `mcp-bridge`、调整 `wolf-rbac` 的
   `header_prefix`、`oas-validator` 默认校验 `spec_url` 证书、Prometheus Stream
   指标新增标签，以及 `apisix start` 不再吞掉 OpenResty 标准输出。

@@ -78,6 +78,7 @@ test -f /usr/local/apisix/ui/docs/assets/branding/agw-mark.svg
 test -f /usr/local/apisix/ui/docs/assets/branding/agw-favicon.svg
 test -f /usr/local/apisix/ui/docs/assets/branding/favicon.ico
 grep -Fq 'assets/branding/agw-mark.svg' /usr/local/apisix/ui/docs/index.html
+! grep -R -I -q -E 'BEGIN (RSA |EC |ENCRYPTED )?PRIVATE KEY' /usr/local/apisix/ui/docs
 test -f /usr/local/share/agw/dashboard-source.json
 
 echo "[runtime] SM2 dual-certificate NTLS handshake"
