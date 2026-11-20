@@ -224,6 +224,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 {table_row("Tongsuo", env["TONGSHUO_VERSION"], f"`{env['TONGSHUO_COMMIT']}`")}
 {table_row("Tongsuo/OpenSSL 内核", env["TONGSHUO_OPENSSL_VERSION"], "-")}
 {table_row("API7 runtime 口径", env["BUILD_TOOLS_TAG"], f"`{env['BUILD_TOOLS_COMMIT']}`")}
+{table_row("NGINX 核心", env["APISIX_NGINX_CORE_VERSION"], f"`{env['APISIX_NGINX_MODULE_COMMIT']}`")}
 {table_row("PCRE2", env["PCRE2_VERSION"], f"`{env['PCRE2_COMMIT']}`")}
 {table_row("zlib", env["ZLIB_VERSION"], f"`{env['ZLIB_SHA256']}`")}
 {table_row("LuaRocks", env["LUAROCKS_VERSION"], f"`{env['LUAROCKS_SHA256']}`")}
@@ -296,7 +297,9 @@ ubuntu-builder    -> ubuntu-final
 2. 从已校验归档构建 PCRE2 `{env['PCRE2_VERSION']}` 与 zlib `{env['ZLIB_VERSION']}`；
 3. 构建 Tongsuo `{env['TONGSHUO_VERSION']}`，启用 `enable-ntls`；
 4. 按 API7 runtime `{env['BUILD_TOOLS_TAG']}` 口径构建 OpenResty
-   `{env['OPENRESTY_VERSION']}`；
+   `{env['OPENRESTY_VERSION']}`，并由 `apisix-nginx-module
+   {env['APISIX_NGINX_MODULE_TAG']}` 将 NGINX 核心升级到
+   `{env['APISIX_NGINX_CORE_VERSION']}`；
 5. 安装 LuaRocks `{env['LUAROCKS_VERSION']}`，构建 APISIX 依赖并安装
    APISIX `{env['APISIX_TAG']}`。
 

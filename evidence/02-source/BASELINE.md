@@ -8,12 +8,13 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 
 | 项 | 版本/tag/口径 | commit 或 SHA256 |
 |---|---|---|
-| APISIX | 3.20.0 | `bc1e687fdb82883f86d1bca9fa4fbd6bb433682b` |
+| APISIX | 3.21.0 | `07446140f87b475330ab86f280b94eaf2aeda020` |
 | APISIX Dashboard | `apache/apisix-dashboard:master` | 每次构建解析并记录 commit |
 | OpenResty | 1.31.8.1 | `265baf62de60397452f306d61b168ab2c1809d41` |
 | Tongsuo | 8.5.0 | `80cfbe3eb194a4d30da90742273c305ad4d096be` |
 | Tongsuo/OpenSSL 内核 | 3.5.4 | - |
-| API7 runtime 口径 | apisix-runtime/1.4.2 | `6aaa033823d3b041952a1da6360b5d11ccb99c08` |
+| API7 runtime 口径 | apisix-runtime/1.4.3 | `a582dc4dd467732119f35a05a5ee40b406897b98` |
+| NGINX 核心 | 1.31.9 | `be9b5c53efd60060f75055382dfbfd0ba3b7f3a2` |
 | PCRE2 | 10.49 | `6f9d7c1373262c541324a16a358785b33ef116cf` |
 | zlib | 1.3.2 | `bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16` |
 | LuaRocks | 3.12.0 | `745e3c5df2f955ecaf60ba1361cfc224564ef7ec210e9a784a3858ae853e9f7c` |
@@ -24,7 +25,7 @@ SHA256、基础镜像 digest，然后解压 APISIX 到 `build/src/`。
 | 模块 | tag | commit |
 |---|---|---|
 | ngx_multi_upstream_module | 1.4.1 | `1271391a52e947b576ecbfced05d8bedcd22d04f` |
-| apisix-nginx-module | 1.20.3 | `fa0559cd8916427183e50db8e5e12a6acf671ac2` |
+| apisix-nginx-module | 1.20.4 | `be9b5c53efd60060f75055382dfbfd0ba3b7f3a2` |
 | wasm-nginx-module | 0.7.0 | `0b4b31d6ecfdbc587e8ea455ed6e920a98aadff1` |
 | lua-var-nginx-module | v0.5.3 | `dc04c71e14e8a0407831f9019043d7e6da61b3c3` |
 | mod_dubbo | 1.0.2 | `4aabf9448fe4a49ca71009af8e03645ee5dadd15` |

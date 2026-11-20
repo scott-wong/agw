@@ -2,8 +2,8 @@
 # AGW 产品说明
 
 - 产品：AGW，独立开放的 API 网关发行版。
-- 当前版本：`3.20.0-agw.1`。
-- 上游关系：based on Apache APISIX `3.20.0`。
+- 当前版本：`3.21.0-agw.1`。
+- 上游关系：based on Apache APISIX `3.21.0`。
 - 交付物：`linux/amd64` 的 openEuler 与 Ubuntu 两个最终容器镜像。
 - 不交付：RPM、fpm 中间包、离线镜像 tar、全局 `<版本>` 或 `latest` 标签。
 - 运行用户：继承基础镜像默认用户；当前为 `root`，Nginx worker 为 `nobody`。
@@ -14,5 +14,5 @@
 - Admin UI：从 `apache/apisix-dashboard` master 源码构建 AGW Dashboard，入口位于
   Admin API 的 `/ui/`；实际 commit 记录在镜像标签、provenance 和发布清单中。
 
-兼容承诺仅覆盖上游 APISIX `3.20.0` 的协议与 Admin API 行为，以及本仓文档明确
+兼容承诺仅覆盖上游 APISIX `3.21.0` 的协议与 Admin API 行为，以及本仓文档明确
 列出的发行层差异。

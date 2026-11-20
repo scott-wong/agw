@@ -14,7 +14,7 @@ OPENSSL_PREFIX="$OR_PREFIX/tongsuo"
 ZLIB_PREFIX="$OR_PREFIX/zlib"
 PCRE_PREFIX="$OR_PREFIX/pcre"
 OPENSSL_CONF_PATH="${OPENSSL_CONF_PATH:-/opt/agw/packaging/openssl/openssl.cnf}"
-APISIX_RUNTIME_VERSION="${APISIX_RUNTIME_VERSION:-1.4.2}"
+APISIX_RUNTIME_VERSION="${APISIX_RUNTIME_VERSION:-1.4.3}"
 WORK="${WORK:-/tmp/agw-runtime-build}"
 
 export PATH="$PCRE_PREFIX/bin:$OPENSSL_PREFIX/bin:$OR_PREFIX/bin:$OR_PREFIX/luajit/bin:$PATH"
@@ -99,6 +99,17 @@ prepare_modules() {
     cd "$WORK/apisix-nginx-module/patch"
     ./patch.sh "../../openresty-${OPENRESTY_VERSION}"
   )
+  local nginx_header
+  nginx_header="$(find "$WORK/openresty-${OPENRESTY_VERSION}/bundle" \
+    -maxdepth 4 -path '*/src/core/nginx.h' -print -quit)"
+  [ -n "$nginx_header" ] || {
+    echo "错误: 找不到 OpenResty 内的 NGINX 核心头文件" >&2
+    exit 1
+  }
+  grep -q "#define NGINX_VERSION      \"$APISIX_NGINX_CORE_VERSION\"" "$nginx_header" || {
+    echo "错误: apisix-nginx-module 未将 NGINX 核心升级到 $APISIX_NGINX_CORE_VERSION" >&2
+    exit 1
+  }
   # The upstream helper downloads this release asset without verification.
   # Stage the pinned archive through make fetch and only unpack it here.
   local wasmtime_archive="$DISTFILES/$WASMTIME_C_API_ASSET"
@@ -234,6 +245,8 @@ cp "$SCRIPT_DIR/baseline.env" /usr/local/share/agw/baseline.env
   echo "pcre2=${PCRE2_VERSION}"
   echo "zlib=${ZLIB_VERSION}"
   echo "runtime_reference=${BUILD_TOOLS_TAG}"
+  echo "apisix_runtime=${APISIX_RUNTIME_VERSION}"
+  echo "apisix_nginx_core=${APISIX_NGINX_CORE_VERSION}"
 } > /usr/local/share/agw/runtime-provenance.txt
 
 /usr/local/openresty/bin/openresty -V 2>&1 | sed -n '1,6p'

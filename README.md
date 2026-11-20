@@ -20,7 +20,7 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 
 ## 交付标签
 
-`VERSION` 当前为 `3.20.0-agw.1`，对应上游 `3.20.0`。每个变体有三个标签。
+`VERSION` 当前为 `3.21.0-agw.1`，对应上游 `3.21.0`。每个变体有三个标签。
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 | 变体 | 不可移动版本标签 | 上游线标签 | 浮动标签 |
@@ -31,12 +31,12 @@ AGW 的差异集中在运行时、交付镜像和少量发行配置。
 例如：
 
 ```text
-ghcr.io/scott-wong/agw:3.20.0-agw.1-openeuler
-ghcr.io/scott-wong/agw:3.20.0-openeuler
+ghcr.io/scott-wong/agw:3.21.0-agw.1-openeuler
+ghcr.io/scott-wong/agw:3.21.0-openeuler
 ghcr.io/scott-wong/agw:latest-openeuler
 
-ghcr.io/scott-wong/agw:3.20.0-agw.1-ubuntu
-ghcr.io/scott-wong/agw:3.20.0-ubuntu
+ghcr.io/scott-wong/agw:3.21.0-agw.1-ubuntu
+ghcr.io/scott-wong/agw:3.21.0-ubuntu
 ghcr.io/scott-wong/agw:latest-ubuntu
 ```
 
@@ -51,11 +51,11 @@ SHA256 和基础镜像 digest：
 
 | 项 | 锁定值 |
 |----|--------|
-| APISIX | `3.20.0` @ `bc1e687fdb82883f86d1bca9fa4fbd6bb433682b` |
+| APISIX | `3.21.0` @ `07446140f87b475330ab86f280b94eaf2aeda020` |
 | APISIX Dashboard | `apache/apisix-dashboard` master，每次构建解析并记录精确 commit 与归档 SHA256 |
-| OpenResty | `1.31.8.1` |
+| OpenResty | `1.31.8.1`，经 `apisix-nginx-module 1.20.4` 升级到 NGINX `1.31.9` 核心 |
 | Tongsuo | `8.5.0`（OpenSSL 3.5.4 内核，启用 TLCP/NTLS） |
-| API7 runtime 构建口径 | `apisix-runtime/1.4.2` @ `6aaa033823d3b041952a1da6360b5d11ccb99c08` |
+| API7 runtime 构建口径 | `apisix-runtime/1.4.3` @ `a582dc4dd467732119f35a05a5ee40b406897b98` |
 | PCRE2 | `10.49`，源码构建并安装在 OpenResty 前缀内 |
 | zlib | `1.3.2`，源码构建并安装在 OpenResty 前缀内 |
 | wasmtime C API | `v0.38.1`，固定归档 SHA256 |
@@ -184,11 +184,11 @@ CI 会分别验证 standalone 启动、外置 etcd 启动、Admin API 和数据�
 
 ```sh
 make fetch
-make build-image VARIANT=openeuler IMAGE=agw:3.20.0-agw.1-openeuler
-make build-image VARIANT=ubuntu IMAGE=agw:3.20.0-agw.1-ubuntu
-make verify-image VARIANT=openeuler IMAGE=agw:3.20.0-agw.1-openeuler
-make verify-image VARIANT=ubuntu IMAGE=agw:3.20.0-agw.1-ubuntu
-make verify-etcd IMAGE=agw:3.20.0-agw.1-openeuler
+make build-image VARIANT=openeuler IMAGE=agw:3.21.0-agw.1-openeuler
+make build-image VARIANT=ubuntu IMAGE=agw:3.21.0-agw.1-ubuntu
+make verify-image VARIANT=openeuler IMAGE=agw:3.21.0-agw.1-openeuler
+make verify-image VARIANT=ubuntu IMAGE=agw:3.21.0-agw.1-ubuntu
+make verify-etcd IMAGE=agw:3.21.0-agw.1-openeuler
 ```
 
 常用入口：

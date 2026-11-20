@@ -45,11 +45,11 @@ AGW 深浅色图标替换上游 Logo/favicon，恢复指向本地 `/ui/docs/` �
 2. 从源码编译 zlib `1.3.2` 到 `/usr/local/openresty/zlib`。
 3. 编译 Tongsuo `8.5.0` 到 `/usr/local/openresty/tongsuo`，参数包含
    `shared enable-ntls zlib`，并统一使用 `--libdir=lib`。
-4. 运行模块自带的 `patch.sh`；`apisix-nginx-module 1.20.3` 与
-   `ngx_multi_upstream_module 1.4.1` 原生识别 OpenResty `1.31.8.1`，不再维护旧
-   OpenResty 的本地 patch 覆盖。
+4. 运行模块自带的 `patch.sh`；`apisix-nginx-module 1.20.4` 将 OpenResty
+   `1.31.8.1` 内的 NGINX 核心升级到 `1.31.9`，`ngx_multi_upstream_module 1.4.1`
+   继续适配同一 OpenResty 基线。
    wasmtime C API `v0.38.1` 不再由模块脚本临时下载，而是从已校验归档解压。
-5. 按 API7 runtime `1.4.2` 口径构建 OpenResty，链接 Tongsuo、PCRE2 与 zlib，
+5. 按 API7 runtime `1.4.3` 口径构建 OpenResty，链接 Tongsuo、PCRE2 与 zlib，
    并用 `ldd` 断言动态库来源。
 
 `nginx` 刻意不传 `--with-openssl=`。该选项会用 Nginx 自己的参数重新配置源码，
@@ -61,7 +61,7 @@ AGW 深浅色图标替换上游 Logo/favicon，恢复指向本地 `/ui/docs/` �
 `scripts/install-luarocks.sh` 用 OpenResty 的 LuaJIT 安装固定版本 LuaRocks。
 `scripts/install-apisix.sh`：
 
-1. 解压 APISIX `3.20.0`，按文件名顺序应用 `patches/apisix/*.patch`。
+1. 解压 APISIX `3.21.0`，按文件名顺序应用 `patches/apisix/*.patch`。
 2. 用 LuaRocks 构建依赖和 APISIX CLI。
 3. 注入 `-DXMLSEC_NO_RIPEMD160=1`，适配 Tongsuo 不再导出
    `EVP_ripemd160` 的现实。
@@ -125,5 +125,5 @@ RPATH 定位私有库，避免污染 `dnf`、`git` 等系统工具使用的 Open
 
 ## 版本不可变性
 
-`VERSION` 是唯一事实源，当前为 `3.20.0-agw.1`。Git tag 必须是
+`VERSION` 是唯一事实源，当前为 `3.21.0-agw.1`。Git tag 必须是
 `v<版本>`。正式镜像标签不得移动；重新发布必须 bump `VERSION`。

@@ -16,10 +16,12 @@ ubuntu-builder    -> ubuntu-final
 1. 安装构建依赖；
 2. 从已校验归档构建 PCRE2 `10.49` 与 zlib `1.3.2`；
 3. 构建 Tongsuo `8.5.0`，启用 `enable-ntls`；
-4. 按 API7 runtime `apisix-runtime/1.4.2` 口径构建 OpenResty
-   `1.31.8.1`；
+4. 按 API7 runtime `apisix-runtime/1.4.3` 口径构建 OpenResty
+   `1.31.8.1`，并由 `apisix-nginx-module
+   1.20.4` 将 NGINX 核心升级到
+   `1.31.9`；
 5. 安装 LuaRocks `3.12.0`，构建 APISIX 依赖并安装
-   APISIX `3.20.0`。
+   APISIX `3.21.0`。
 
 APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开始时只解析一次
 `apache/apisix-dashboard` master HEAD，下载该精确 commit 的源码归档，并由
@@ -31,7 +33,7 @@ AGW 源码补丁将页面标题和动态 `document.title` 统一为 `AGW Dashboa
 APISIX Logo/favicon 为 AGW SVG 品牌资产，移除语言菜单翻译 CTA、恢复指向本地
 `/ui/docs/` 的文档入口，并保留 SSL 详情页对隐藏私钥字段的兼容修复。文档由
 `docs-builder` 从当前
-APISIX `3.20.0` 源码归档构建，过滤非产品内容、完成 AGW 品牌替换，
+APISIX `3.21.0` 源码归档构建，过滤非产品内容、完成 AGW 品牌替换，
 并本地化可获取的外部图片。
 
 final stage 只复制运行目录，不带编译器、头文件、静态库或包管理器缓存。私有库通过

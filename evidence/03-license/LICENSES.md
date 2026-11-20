@@ -1,7 +1,7 @@
 <!-- 由 `scripts/gen-evidence.py` 生成；不要手工修改。 -->
 # 许可证与归属
 
-- Apache APISIX `3.20.0`：Apache License 2.0。
+- Apache APISIX `3.21.0`：Apache License 2.0。
 - APISIX Dashboard 源码：来自 `apache/apisix-dashboard` 的
   `master`，Apache License 2.0；镜像保留源码 LICENSE/NOTICE。
 - OpenResty `1.31.8.1`、Tongsuo `8.5.0`、

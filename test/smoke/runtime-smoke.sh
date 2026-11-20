@@ -31,6 +31,14 @@ case "$openresty_version" in
     exit 1
     ;;
 esac
+printf '%s' "$openresty_version" | grep -q 'APISIX_RUNTIME_VER=1.4.3' || {
+  echo "ERROR: unexpected APISIX runtime version" >&2
+  exit 1
+}
+grep -q '^runtime_reference=apisix-runtime/1.4.3$' \
+  /usr/local/share/agw/runtime-provenance.txt
+grep -q '^apisix_runtime=1.4.3$' /usr/local/share/agw/runtime-provenance.txt
+grep -q '^apisix_nginx_core=1.31.9$' /usr/local/share/agw/runtime-provenance.txt
 test -x /usr/local/bin/apisix
 /usr/local/bin/apisix version
 

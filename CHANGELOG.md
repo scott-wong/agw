@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+## [3.21.0-agw.1] - 2026-11-20
+
+### Changed
+- 上游基线升级到 Apache APISIX `3.21.0`。
+- API7 runtime 构建口径升级到 `1.4.3`，`apisix-nginx-module` 升级到 `1.20.4`；
+  在 OpenResty `1.31.8.1` 内将 NGINX 核心升级到 `1.31.9`，纳入 2026-11-18
+  发布的十项 NGINX 安全修复。
+- 继续保留 AGW 的 Tongsuo TLCP/NTLS、SM2 双证书、可配置 `Server` 头和品牌化
+  Dashboard。
+- 继承上游 3.21.0 的兼容性变更，包括 Admin API key 必须声明 `admin` 或
+  `viewer` 角色、加密字段新增 `$ENC$v1$` 标记，以及敏感配置日志清理。
+
 ## [3.20.0-agw.1] - 2026-11-17
 
 ### Changed
@@ -112,6 +124,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.21.0-agw.1]: https://github.com/scott-wong/agw/releases/tag/v3.21.0-agw.1
 [3.20.0-agw.1]: https://github.com/scott-wong/agw/releases/tag/v3.20.0-agw.1
 [3.19.0-agw.16]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.16
 [3.19.0-agw.15]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.15
