@@ -25,7 +25,7 @@ test -x /usr/local/openresty/bin/openresty
 openresty_version="$(/usr/local/openresty/bin/openresty -V 2>&1)"
 printf '%s\n' "$openresty_version" | awk 'NR <= 5'
 case "$openresty_version" in
-  *openresty/1.31.8.1*) ;;
+  *openresty/1.31.9.1*) ;;
   *)
     echo "ERROR: unexpected OpenResty version" >&2
     exit 1

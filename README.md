@@ -62,6 +62,11 @@ SHA256 和基础镜像 digest：
 | openEuler 基础镜像 | `quay.io/openeuler/openeuler:24.03-lts-sp4`，按 index digest 固定 |
 | Ubuntu 基础镜像 | `ubuntu:24.04`，按 index digest 固定 |
 
+升级到 NGINX `1.31.9` 核心后，`openresty -v` 会显示
+`openresty/1.31.9.1`。这是 OpenResty 的
+`NGINX_VER="openresty/" NGINX_VERSION ".1"` 组合版本；源码基线仍是 OpenResty
+`1.31.8.1`。
+
 两个运行时都在各自目标发行版内编译；不会把 openEuler 的编译结果复制到 Ubuntu，
 或反向复制。最终阶段使用干净基础镜像，只复制运行所需目录，不带编译器、头文件、
 开发包或构建缓存。

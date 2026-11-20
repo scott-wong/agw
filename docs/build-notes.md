@@ -52,6 +52,10 @@ AGW 深浅色图标替换上游 Logo/favicon，恢复指向本地 `/ui/docs/` �
 5. 按 API7 runtime `1.4.3` 口径构建 OpenResty，链接 Tongsuo、PCRE2 与 zlib，
    并用 `ldd` 断言动态库来源。
 
+应用 `nginx-1.31.9.patch` 后，`openresty -v` 输出为 `openresty/1.31.9.1`，这是
+OpenResty 使用 `NGINX_VER="openresty/" NGINX_VERSION ".1"` 生成的组合字符串；
+OpenResty 源码归档仍然是 `1.31.8.1`。
+
 `nginx` 刻意不传 `--with-openssl=`。该选项会用 Nginx 自己的参数重新配置源码，
 破坏 Tongsuo 的 `enable-ntls` 口径；AGW 通过 include、library path 和 rpath 链接
 动态 Tongsuo。

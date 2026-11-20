@@ -303,6 +303,9 @@ ubuntu-builder    -> ubuntu-final
 5. 安装 LuaRocks `{env['LUAROCKS_VERSION']}`，构建 APISIX 依赖并安装
    APISIX `{env['APISIX_TAG']}`。
 
+应用 `nginx-1.31.9.patch` 后，`openresty -v` 显示 `openresty/1.31.9.1`；
+这是 OpenResty 的组合版本字符串，源码归档基线仍是 `{env['OPENRESTY_VERSION']}`。
+
 APISIX 源码发布包不包含已构建的 Admin UI。CI 在每次 workflow 开始时只解析一次
 `apache/apisix-dashboard` master HEAD，下载该精确 commit 的源码归档，并由
 `dashboard-builder` 使用 Node `{env['NODE_BASE_TAG']}`、pnpm

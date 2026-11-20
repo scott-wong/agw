@@ -12,7 +12,8 @@
 - 上游基线升级到 Apache APISIX `3.21.0`。
 - API7 runtime 构建口径升级到 `1.4.3`，`apisix-nginx-module` 升级到 `1.20.4`；
   在 OpenResty `1.31.8.1` 内将 NGINX 核心升级到 `1.31.9`，纳入 2026-11-18
-  发布的十项 NGINX 安全修复。
+  发布的十项 NGINX 安全修复。补丁后 `openresty -v` 显示
+  `openresty/1.31.9.1`。
 - 继续保留 AGW 的 Tongsuo TLCP/NTLS、SM2 双证书、可配置 `Server` 头和品牌化
   Dashboard。
 - 继承上游 3.21.0 的兼容性变更，包括 Admin API key 必须声明 `admin` 或
