@@ -7,9 +7,9 @@
 # No runtime tree is copied between distributions. The final stages inherit
 # the base image's default user (root) and do not add a USER directive.
 
-ARG OPENEULER_BASE=quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e
-ARG UBUNTU_BASE=ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
-ARG NODE_BASE=node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202
+ARG OPENEULER_BASE=quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:cacf1c031180b3a93af04ed775d13f22d88e07339bdeaab5ec01015e7d279a47
+ARG UBUNTU_BASE=ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b
+ARG NODE_BASE=node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
 
 # ---------------------------------------------------------------------------
 # Documentation builder
@@ -118,7 +118,7 @@ RUN DISTFILES=/opt/agw/distfiles bash scripts/install-apisix.sh \
 # ---------------------------------------------------------------------------
 FROM ${OPENEULER_BASE} AS openeuler-final
 
-ARG AGW_VERSION=3.21.0-agw.2
+ARG AGW_VERSION=3.21.0-agw.3
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -128,7 +128,7 @@ LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/scott-wong/agw" \
       org.opencontainers.image.base.name="quay.io/openeuler/openeuler:24.03-lts-sp4" \
-      org.opencontainers.image.base.digest="sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e" \
+      org.opencontainers.image.base.digest="sha256:cacf1c031180b3a93af04ed775d13f22d88e07339bdeaab5ec01015e7d279a47" \
       org.opencontainers.image.vendor="AGW" \
       io.agw.variant="openeuler" \
       io.agw.dashboard.source.commit="${DASHBOARD_SHA}" \
@@ -168,7 +168,7 @@ ENTRYPOINT ["/usr/local/bin/agw-entrypoint"]
 # ---------------------------------------------------------------------------
 FROM ${UBUNTU_BASE} AS ubuntu-final
 
-ARG AGW_VERSION=3.21.0-agw.2
+ARG AGW_VERSION=3.21.0-agw.3
 ARG DASHBOARD_SHA
 ARG DASHBOARD_SOURCE_SHA256
 
@@ -178,7 +178,7 @@ LABEL org.opencontainers.image.title="AGW" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/scott-wong/agw" \
       org.opencontainers.image.base.name="ubuntu:24.04" \
-      org.opencontainers.image.base.digest="sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852" \
+      org.opencontainers.image.base.digest="sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b" \
       org.opencontainers.image.vendor="AGW" \
       io.agw.variant="ubuntu" \
       io.agw.dashboard.source.commit="${DASHBOARD_SHA}" \

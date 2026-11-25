@@ -13,6 +13,16 @@ done < <(find scripts test packaging -type f -name '*.sh' -print | sort)
 echo "[static] baseline environment"
 bash -c 'source scripts/baseline.env'
 
+echo "[static] Dockerfile base pins match baseline"
+source scripts/baseline.env
+grep -Fq "ARG OPENEULER_BASE=${OPENEULER_BASE_REF}" packaging/docker/Dockerfile
+grep -Fq "ARG UBUNTU_BASE=${UBUNTU_BASE_REF}" packaging/docker/Dockerfile
+grep -Fq "ARG NODE_BASE=${NODE_BASE_REF}" packaging/docker/Dockerfile
+grep -Fq "org.opencontainers.image.base.digest=\"${OPENEULER_BASE_INDEX_DIGEST}\"" \
+  packaging/docker/Dockerfile
+grep -Fq "org.opencontainers.image.base.digest=\"${UBUNTU_BASE_INDEX_DIGEST}\"" \
+  packaging/docker/Dockerfile
+
 echo "[static] generated evidence"
 python3 scripts/gen-evidence.py --check
 

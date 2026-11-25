@@ -39,7 +39,7 @@ OpenResty bundle 中的同名组件。
 
 | 变体 | 固定引用 |
 |---|---|
-| openEuler | `quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:17c15554be2a5bc46023acb6e04d609d77642b8c20e236e88deb18e41ae4558e` |
-| Ubuntu | `ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8` |
+| openEuler | `quay.io/openeuler/openeuler:24.03-lts-sp4@sha256:cacf1c031180b3a93af04ed775d13f22d88e07339bdeaab5ec01015e7d279a47` |
+| Ubuntu | `ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b` |
 | Admin UI builder | `node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a`（amd64 `sha256:12f54cafa58d0e96554ae05871e29663ff7241836377dc9a7916449b8adb062c`） |
 | 测试 etcd | `quay.io/coreos/etcd:v3.5.21@sha256:a3ccd299377af4b9968d8cbaaf9722fe354297f11908f74a846075e1e5f4ee89` |
