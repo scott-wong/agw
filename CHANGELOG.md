@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+## [3.21.0-agw.2] - 2026-11-25
+
+### Added
+- Dashboard SSL 列表新增证书到期日期，浏览器直接解析证书 `notAfter`，无需变更 Admin API。
+
 ## [3.21.0-agw.1] - 2026-11-20
 
 ### Changed
@@ -125,6 +130,7 @@
 - 基于 Tongsuo 8.5.0 提供 NTLS/TLCP SM2 双证书支持。
 - 支持可配置的 AGW `Server` 头。
 
+[3.21.0-agw.2]: https://github.com/scott-wong/agw/releases/tag/v3.21.0-agw.2
 [3.21.0-agw.1]: https://github.com/scott-wong/agw/releases/tag/v3.21.0-agw.1
 [3.20.0-agw.1]: https://github.com/scott-wong/agw/releases/tag/v3.20.0-agw.1
 [3.19.0-agw.16]: https://github.com/scott-wong/agw/releases/tag/v3.19.0-agw.16

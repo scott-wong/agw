@@ -216,3 +216,17 @@ test('SSL detail tolerates hidden private keys', async ({ page }) => {
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
   await expect(page.getByText('Certificate 1')).toBeVisible();
 });
+
+test('SSL list shows certificate expiry date', async ({ page }) => {
+  await authenticate(page);
+  await page.goto('/ui/ssls?page=1&page_size=10');
+
+  await expect(page.getByRole('heading', { name: 'SSLs' })).toBeVisible();
+  await expect(
+    page.getByRole('columnheader', { name: 'Expires At' })
+  ).toBeVisible();
+
+  const row = page.getByRole('row').filter({ hasText: 'ui-smoke-ssl' });
+  await expect(row).toBeVisible();
+  await expect(row.getByText(/^\d{4}-\d{2}-\d{2}$/)).toBeVisible();
+});

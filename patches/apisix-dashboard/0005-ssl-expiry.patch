@@ -1,0 +1,388 @@
+diff --git a/src/locales/de/common.json b/src/locales/de/common.json
+index ed72e1e..0de6ab2 100644
+--- a/src/locales/de/common.json
++++ b/src/locales/de/common.json
+@@ -374,6 +374,7 @@
+     "upstreams": "Upstreams"
+   },
+   "ssls": {
++    "expiresAt": "Ablaufdatum",
+     "singular": "SSL"
+   },
+   "streamRoutes": {
+diff --git a/src/locales/en/common.json b/src/locales/en/common.json
+index d80d5db..f50d4b5 100644
+--- a/src/locales/en/common.json
++++ b/src/locales/en/common.json
+@@ -374,6 +374,7 @@
+     "upstreams": "Upstreams"
+   },
+   "ssls": {
++    "expiresAt": "Expires At",
+     "singular": "SSL"
+   },
+   "streamRoutes": {
+diff --git a/src/locales/es/common.json b/src/locales/es/common.json
+index 14d9da8..4353f4a 100644
+--- a/src/locales/es/common.json
++++ b/src/locales/es/common.json
+@@ -374,6 +374,7 @@
+     "upstreams": "Upstreams"
+   },
+   "ssls": {
++    "expiresAt": "Fecha de caducidad",
+     "singular": "SSL"
+   },
+   "streamRoutes": {
+diff --git a/src/locales/tr/common.json b/src/locales/tr/common.json
+index ec8a8f9..8cbb48b 100644
+--- a/src/locales/tr/common.json
++++ b/src/locales/tr/common.json
+@@ -374,6 +374,7 @@
+     "upstreams": "Upstream'ler"
+   },
+   "ssls": {
++    "expiresAt": "Son kullanma tarihi",
+     "singular": "SSL"
+   },
+   "streamRoutes": {
+diff --git a/src/locales/zh/common.json b/src/locales/zh/common.json
+index e9e949b..609644f 100644
+--- a/src/locales/zh/common.json
++++ b/src/locales/zh/common.json
+@@ -374,6 +374,7 @@
+     "upstreams": "上游"
+   },
+   "ssls": {
++    "expiresAt": "到期日期",
+     "singular": "SSL"
+   },
+   "streamRoutes": {
+diff --git a/src/routes/ssls/index.tsx b/src/routes/ssls/index.tsx
+index 10b1f96..b1d4ca5 100644
+--- a/src/routes/ssls/index.tsx
++++ b/src/routes/ssls/index.tsx
+@@ -17,4 +17,5 @@
+ import type { ProColumns } from '@ant-design/pro-components';
+ import { ProTable } from '@ant-design/pro-components';
+ import { createFileRoute } from '@tanstack/react-router';
++import dayjs from 'dayjs';
+ import { useMemo } from 'react';
+@@ -31,4 +32,5 @@
+ import { queryClient } from '@/config/global';
+ import type { APISIXType } from '@/types/schema/apisix';
+ import { pageSearchSchema } from '@/types/schema/pageSearch';
++import { getCertificateExpiry } from '@/utils/certificate';
+   const { t } = useTranslation();
+@@ -59,6 +61,16 @@ function RouteComponent() {
+           return '-';
+         },
+       },
++      {
++        dataIndex: ['value', 'cert'],
++        title: t('ssls.expiresAt'),
++        key: 'expiresAt',
++        width: 140,
++        render: (_, record) => {
++          const expiresAt = getCertificateExpiry(record.value.cert);
++          return expiresAt ? dayjs(expiresAt).format('YYYY-MM-DD') : '-';
++        },
++      },
+       {
+         dataIndex: ['value', 'status'],
+         title: t('form.basic.status'),
+diff --git a/src/utils/certificate.test.ts b/src/utils/certificate.test.ts
+new file mode 100644
+index 0000000..a7abc43
+--- /dev/null
++++ b/src/utils/certificate.test.ts
+@@ -0,0 +1,71 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++import { describe, expect, it } from 'vitest';
++
++import { getCertificateExpiry } from './certificate';
++
++const utcTimeCertificate = `-----BEGIN CERTIFICATE-----
++MIIBYTCCAQigAwIBAgIUbwD4DQzqTWzr7a6IoXZtrXtV+MgwCgYIKoZIzj0EAwIw
++FzEVMBMGA1UEAwwMYWd3LXV0Yy50ZXN0MB4XDTI2MDEwMTAwMDAwMFoXDTMyMTIz
++MTIzNTk1OVowFzEVMBMGA1UEAwwMYWd3LXV0Yy50ZXN0MFkwEwYHKoZIzj0CAQYI
++KoZIzj0DAQcDQgAEurOe8WEJ/nDJAxbzxoLHF270KGgyywGVkzuvWfRfwuWIz3BB
++0YUdcEoPLdgJCwJB/4N5x5JCnHWCfJSt29qCwaMyMDAwHQYDVR0OBBYEFAhejmEQ
++0dJawsVsuBUdWi9aQNOuMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDRwAw
++RAIgT49r4hD47uSV1ndIg2gia89VGbg+nOqbpBTz/J5iSngCIFVuYPF1FFFSwwtE
++fqpe61rHZXe7Uee03E2AY7epvIHq
++-----END CERTIFICATE-----`;
++
++const generalizedTimeCertificate = `-----BEGIN CERTIFICATE-----
++MIIBdDCCARqgAwIBAgIUe/iDW5cfDwmmYaP+UjgsJe81ZTYwCgYIKoZIzj0EAwIw
++HzEdMBsGA1UEAwwUYWd3LWdlbmVyYWxpemVkLnRlc3QwIBcNMjYwMTAxMDAwMDAw
++WhgPMjA2MDA2MzAxMjM0NTZaMB8xHTAbBgNVBAMMFGFndy1nZW5lcmFsaXplZC50
++ZXN0MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7hMVpf2S0h7uR50OO/A4Zc6B
++4+SRDg3qGn398lj+tGzSBQq1TD/IYm0gxCSGxVDZLhWsUKU8FJDjrKq8CtwZYaMy
++MDAwHQYDVR0OBBYEFI0QdVgPGDBs4QetkrSCjDI3BwDEMA8GA1UdEwEB/wQFMAMB
++Af8wCgYIKoZIzj0EAwIDSAAwRQIhAIGhZMu+VxDTEP3VDs8j1Ri8suAGCGXPwqzd
++jqtduvnAAiBCRhqtGU30d6VLBq8Q0XJqcl12D9hm9RpuXPgQ1QL4rg==
++-----END CERTIFICATE-----`;
++
++describe('getCertificateExpiry', () => {
++  it('reads notAfter from a UTCTime certificate', () => {
++    expect(getCertificateExpiry(utcTimeCertificate)?.toISOString()).toBe(
++      '2032-12-31T23:59:59.000Z'
++    );
++  });
++
++  it('reads notAfter from a GeneralizedTime certificate', () => {
++    expect(getCertificateExpiry(generalizedTimeCertificate)?.toISOString()).toBe(
++      '2060-06-30T12:34:56.000Z'
++    );
++  });
++
++  it('uses the primary certificate in a chain', () => {
++    const chain = `${utcTimeCertificate}\n${generalizedTimeCertificate}`;
++    expect(getCertificateExpiry(chain)?.toISOString()).toBe(
++      '2032-12-31T23:59:59.000Z'
++    );
++  });
++
++  it.each([
++    undefined,
++    '',
++    'not a certificate',
++    '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----',
++  ])('returns undefined for invalid input %s', (pem) => {
++    expect(getCertificateExpiry(pem)).toBeUndefined();
++  });
++});
+diff --git a/src/utils/certificate.ts b/src/utils/certificate.ts
+new file mode 100644
+index 0000000..323c6d9
+--- /dev/null
++++ b/src/utils/certificate.ts
+@@ -0,0 +1,212 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++const PEM_CERTIFICATE =
++  /-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/;
++
++const DER_SEQUENCE = 0x30;
++const DER_INTEGER = 0x02;
++const DER_UTC_TIME = 0x17;
++const DER_GENERALIZED_TIME = 0x18;
++const DER_VERSION = 0xa0;
++
++type DerNode = {
++  tag: number;
++  value: Uint8Array;
++  next: number;
++};
++
++const readNode = (bytes: Uint8Array, offset = 0): DerNode => {
++  if (offset < 0 || offset + 2 > bytes.length) {
++    throw new Error('Truncated DER value');
++  }
++
++  const tag = bytes[offset];
++  let cursor = offset + 1;
++  let length = bytes[cursor];
++  cursor += 1;
++
++  if (length & 0x80) {
++    const octets = length & 0x7f;
++    if (octets === 0 || octets > 4 || cursor + octets > bytes.length) {
++      throw new Error('Invalid DER length');
++    }
++    length = 0;
++    for (let index = 0; index < octets; index += 1) {
++      length = length * 256 + bytes[cursor];
++      cursor += 1;
++    }
++  }
++
++  const end = cursor + length;
++  if (end > bytes.length) {
++    throw new Error('Truncated DER content');
++  }
++
++  return { tag, value: bytes.subarray(cursor, end), next: end };
++};
++
++const decodeBase64 = (value: string) => {
++  const binary = atob(value);
++  const bytes = new Uint8Array(binary.length);
++  for (let index = 0; index < binary.length; index += 1) {
++    bytes[index] = binary.charCodeAt(index);
++  }
++  return bytes;
++};
++
++const decodeAscii = (bytes: Uint8Array) => {
++  let value = '';
++  for (const byte of bytes) {
++    value += String.fromCharCode(byte);
++  }
++  return value;
++};
++
++const parseTime = (node: DerNode) => {
++  const value = decodeAscii(node.value);
++  if (node.tag === DER_UTC_TIME) {
++    const match =
++      /^(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?(Z|[+-]\d{4})$/.exec(value);
++    if (!match) {
++      throw new Error('Invalid UTCTime');
++    }
++
++    const [, year, month, day, hour, minute, second = '00', zone] = match;
++    const fourDigitYear =
++      Number(year) + (Number(year) >= 50 ? 1900 : 2000);
++    return buildDate(
++      fourDigitYear,
++      month,
++      day,
++      hour,
++      minute,
++      second,
++      zone
++    );
++  }
++
++  if (node.tag === DER_GENERALIZED_TIME) {
++    const match =
++      /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?:\.\d+)?(Z|[+-]\d{4})$/.exec(
++        value
++      );
++    if (!match) {
++      throw new Error('Invalid GeneralizedTime');
++    }
++
++    const [, year, month, day, hour, minute, second, zone] = match;
++    return buildDate(
++      Number(year),
++      month,
++      day,
++      hour,
++      minute,
++      second,
++      zone
++    );
++  }
++
++  throw new Error('Unsupported X.509 time encoding');
++};
++
++const buildDate = (
++  year: number,
++  month: string,
++  day: string,
++  hour: string,
++  minute: string,
++  second: string,
++  zone: string
++) => {
++  const timestamp = Date.UTC(
++    year,
++    Number(month) - 1,
++    Number(day),
++    Number(hour),
++    Number(minute),
++    Number(second)
++  );
++  const offsetMinutes =
++    zone === 'Z'
++      ? 0
++      : (zone[0] === '+' ? 1 : -1) *
++        (Number(zone.slice(1, 3)) * 60 + Number(zone.slice(3, 5)));
++  const date = new Date(timestamp - offsetMinutes * 60 * 1000);
++  if (Number.isNaN(date.getTime())) {
++    throw new Error('Invalid X.509 time');
++  }
++  return date;
++};
++
++/**
++ * Reads the primary certificate's notAfter value from a PEM certificate or
++ * certificate chain. Returns undefined for empty or malformed input.
++ */
++export const getCertificateExpiry = (pem?: string) => {
++  const match = PEM_CERTIFICATE.exec(pem ?? '');
++  if (!match) {
++    return undefined;
++  }
++
++  try {
++    const bytes = decodeBase64(match[1].replace(/\s+/g, ''));
++    const certificate = readNode(bytes);
++    if (certificate.tag !== DER_SEQUENCE) {
++      return undefined;
++    }
++
++    const tbsCertificate = readNode(certificate.value);
++    if (tbsCertificate.tag !== DER_SEQUENCE) {
++      return undefined;
++    }
++
++    let cursor = 0;
++    let node = readNode(tbsCertificate.value, cursor);
++    cursor = node.next;
++    if (node.tag === DER_VERSION) {
++      node = readNode(tbsCertificate.value, cursor);
++      cursor = node.next;
++    }
++    if (node.tag !== DER_INTEGER) {
++      return undefined;
++    }
++
++    const signature = readNode(tbsCertificate.value, cursor);
++    cursor = signature.next;
++    if (signature.tag !== DER_SEQUENCE) {
++      return undefined;
++    }
++
++    const issuer = readNode(tbsCertificate.value, cursor);
++    cursor = issuer.next;
++    if (issuer.tag !== DER_SEQUENCE) {
++      return undefined;
++    }
++
++    const validity = readNode(tbsCertificate.value, cursor);
++    if (validity.tag !== DER_SEQUENCE) {
++      return undefined;
++    }
++
++    const notBefore = readNode(validity.value);
++    const notAfter = readNode(validity.value, notBefore.next);
++    return parseTime(notAfter);
++  } catch {
++    return undefined;
++  }
++};
